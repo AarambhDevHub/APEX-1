@@ -1,0 +1,67 @@
+# APEX-1-Tiny Configuration (for unit testing only, ~1M params)
+
+model:
+  d_model: 64
+  n_layers: 6
+  n_heads_q: 4
+  n_heads_kv: 2
+  d_head: 16
+  d_kv_compressed: 16
+  d_q_compressed: 24
+  d_head_rope: 8
+  d_ffn: 128
+  vocab_size: 1000
+  max_seq_len: 256
+  rope_base: 10000
+  rope_scaling: 1.0
+  dropout: 0.0
+
+attention:
+  global_layer_freq: 6
+  local_window: 64
+  flash: false
+
+moe:
+  enabled: true
+  n_experts: 4
+  n_active: 2
+  n_shared: 1
+  moe_layer_freq: 2
+  balancer_alpha: 0.001
+
+skip_gate:
+  enabled: true
+  hidden_dim: 16
+  threshold: 0.15
+
+multi_token_head:
+  enabled: true
+  n_predict: 4
+  lambda_spec: 0.1
+
+thinking:
+  enabled: true
+  max_thinking_tokens: 64
+
+training:
+  batch_size: 2
+  seq_len: 64
+  peak_lr: 3.0e-4
+  min_lr_ratio: 0.1
+  warmup_steps: 10
+  max_steps: 100
+  grad_clip: 1.0
+  weight_decay: 0.1
+  optimizer: adamw
+  beta1: 0.9
+  beta2: 0.95
+  eps: 1.0e-8
+  gradient_accumulation_steps: 1
+  mixed_precision: fp16
+
+grpo:
+  G: 4
+  beta: 0.04
+  lambda_prm: 0.3
+  lambda_cai: 0.3
+  clip_eps: 0.2

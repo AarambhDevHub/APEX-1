@@ -1,0 +1,68 @@
+# APEX-1-Small Configuration (~100M total params, ~40M active per token)
+# Recommended starting point for development and testing.
+
+model:
+  d_model: 512
+  n_layers: 12
+  n_heads_q: 8
+  n_heads_kv: 2
+  d_head: 64
+  d_kv_compressed: 64
+  d_q_compressed: 96
+  d_head_rope: 32
+  d_ffn: 1376
+  vocab_size: 151643
+  max_seq_len: 8192
+  rope_base: 10000
+  rope_scaling: 1.0
+  dropout: 0.0
+
+attention:
+  global_layer_freq: 6
+  local_window: 512
+  flash: true
+
+moe:
+  enabled: true
+  n_experts: 8
+  n_active: 2
+  n_shared: 1
+  moe_layer_freq: 2
+  balancer_alpha: 0.001
+
+skip_gate:
+  enabled: true
+  hidden_dim: 64
+  threshold: 0.15
+
+multi_token_head:
+  enabled: true
+  n_predict: 4
+  lambda_spec: 0.1
+
+thinking:
+  enabled: true
+  max_thinking_tokens: 1024
+
+training:
+  batch_size: 32
+  seq_len: 2048
+  peak_lr: 3.0e-4
+  min_lr_ratio: 0.1
+  warmup_steps: 1000
+  max_steps: 100000
+  grad_clip: 1.0
+  weight_decay: 0.1
+  optimizer: adamw
+  beta1: 0.9
+  beta2: 0.95
+  eps: 1.0e-8
+  gradient_accumulation_steps: 1
+  mixed_precision: fp16
+
+grpo:
+  G: 8
+  beta: 0.04
+  lambda_prm: 0.3
+  lambda_cai: 0.3
+  clip_eps: 0.2

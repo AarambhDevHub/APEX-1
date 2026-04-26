@@ -1,0 +1,67 @@
+# APEX-1-Large Configuration (~900B total params, ~45B active per token)
+
+model:
+  d_model: 7168
+  n_layers: 72
+  n_heads_q: 128
+  n_heads_kv: 8
+  d_head: 128
+  d_kv_compressed: 512
+  d_q_compressed: 768
+  d_head_rope: 64
+  d_ffn: 18432
+  vocab_size: 151643
+  max_seq_len: 131072
+  rope_base: 1000000
+  rope_scaling: 8.0
+  dropout: 0.0
+
+attention:
+  global_layer_freq: 6
+  local_window: 8192
+  flash: true
+
+moe:
+  enabled: true
+  n_experts: 256
+  n_active: 8
+  n_shared: 4
+  moe_layer_freq: 2
+  balancer_alpha: 0.001
+
+skip_gate:
+  enabled: true
+  hidden_dim: 256
+  threshold: 0.15
+
+multi_token_head:
+  enabled: true
+  n_predict: 4
+  lambda_spec: 0.1
+
+thinking:
+  enabled: true
+  max_thinking_tokens: 8192
+
+training:
+  batch_size: 4
+  seq_len: 8192
+  peak_lr: 3.0e-5
+  min_lr_ratio: 0.1
+  warmup_steps: 15000
+  max_steps: 1000000
+  grad_clip: 1.0
+  weight_decay: 0.1
+  optimizer: adamw
+  beta1: 0.9
+  beta2: 0.95
+  eps: 1.0e-8
+  gradient_accumulation_steps: 16
+  mixed_precision: fp16
+
+grpo:
+  G: 8
+  beta: 0.04
+  lambda_prm: 0.3
+  lambda_cai: 0.3
+  clip_eps: 0.2

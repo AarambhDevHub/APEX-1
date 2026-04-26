@@ -1,0 +1,67 @@
+# APEX-1-Medium Configuration (~7B total params, ~2B active per token)
+
+model:
+  d_model: 2048
+  n_layers: 36
+  n_heads_q: 16
+  n_heads_kv: 4
+  d_head: 128
+  d_kv_compressed: 256
+  d_q_compressed: 384
+  d_head_rope: 64
+  d_ffn: 5504
+  vocab_size: 151643
+  max_seq_len: 65536
+  rope_base: 500000
+  rope_scaling: 4.0
+  dropout: 0.0
+
+attention:
+  global_layer_freq: 6
+  local_window: 2048
+  flash: true
+
+moe:
+  enabled: true
+  n_experts: 64
+  n_active: 4
+  n_shared: 2
+  moe_layer_freq: 2
+  balancer_alpha: 0.001
+
+skip_gate:
+  enabled: true
+  hidden_dim: 128
+  threshold: 0.15
+
+multi_token_head:
+  enabled: true
+  n_predict: 4
+  lambda_spec: 0.1
+
+thinking:
+  enabled: true
+  max_thinking_tokens: 4096
+
+training:
+  batch_size: 16
+  seq_len: 4096
+  peak_lr: 1.0e-4
+  min_lr_ratio: 0.1
+  warmup_steps: 5000
+  max_steps: 500000
+  grad_clip: 1.0
+  weight_decay: 0.1
+  optimizer: adamw
+  beta1: 0.9
+  beta2: 0.95
+  eps: 1.0e-8
+  gradient_accumulation_steps: 4
+  mixed_precision: fp16
+
+grpo:
+  G: 8
+  beta: 0.04
+  lambda_prm: 0.3
+  lambda_cai: 0.3
+  clip_eps: 0.2

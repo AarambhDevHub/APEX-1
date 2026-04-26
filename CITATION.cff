@@ -1,0 +1,24 @@
+cff-version: 1.2.0
+title: "APEX-1: A Best-of-All-Worlds Large Language Model"
+message: "If you use APEX-1 in your research, please cite it as below."
+type: software
+authors:
+  - name: "AArambh Dev Hub"
+    website: "https://github.com/AArambhDevHub"
+repository-code: "https://github.com/AArambhDevHub/APEX-1"
+license: Apache-2.0
+version: "2.0.0"
+date-released: "2025-01-01"
+keywords:
+  - large-language-model
+  - transformer
+  - mixture-of-experts
+  - multi-head-latent-attention
+  - deep-learning
+abstract: >-
+  APEX-1 is a decoder-only transformer LLM that synthesizes innovations
+  from Claude, GPT-4.5, DeepSeek-V3, Qwen3, Gemma 4, GLM-4, KIMI,
+  MiniMax, and Llama 3 into one coherent architecture. Features include
+  MLA, GQA with sliding window, hierarchical MoE, auxiliary-loss-free
+  load balancing, dynamic skip gates, multi-token prediction, and
+  built-in chain-of-thought reasoning.
