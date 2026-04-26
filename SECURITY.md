@@ -12,7 +12,7 @@
 If you discover a security vulnerability in APEX-1, please report it responsibly:
 
 1. **DO NOT** open a public GitHub issue for security vulnerabilities
-2. Email: [security@aarambhdevhub.org](mailto:security@aarambhdevhub.org)
+2. Report via DM on our [Discord server](https://discord.gg/HDth6PfCnp)
 3. Include a detailed description of the vulnerability
 4. Include steps to reproduce if possible
 5. We will acknowledge receipt within 48 hours

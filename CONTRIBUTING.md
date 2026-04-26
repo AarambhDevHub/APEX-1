@@ -71,4 +71,4 @@ pytest tests/ --cov=apex            # with coverage
 
 ## Questions?
 
-Open a [GitHub Issue](https://github.com/AArambhDevHub/APEX-1/issues) for questions or discussions.
+Join our [Discord server](https://discord.gg/HDth6PfCnp) or open a [GitHub Issue](https://github.com/AarambhDevHub/APEX-1/issues) for questions and discussions.

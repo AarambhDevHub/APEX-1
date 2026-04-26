@@ -441,6 +441,6 @@ Every mathematical formula used in APEX-1, in one reference:
 
 **Total: 34 formulas · 24 sections · 4 parts**
 
-*Copyright 2024-2025 AArambh Dev Hub · Apache 2.0*
+*Copyright 2024-2026 Aarambh Dev Hub · Apache 2.0*
 
 </div>

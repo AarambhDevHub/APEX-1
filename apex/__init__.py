@@ -7,8 +7,8 @@ Attention (MLA), Grouped Query Attention with sliding window, Mixture of Experts
 auxiliary-loss-free load balancing, dynamic skip gates, multi-token prediction,
 and built-in reasoning/thinking mode.
 
-Copyright 2024-2025 AArambh Dev Hub. Licensed under Apache 2.0.
+Copyright 2024-2026 Aarambh Dev Hub. Licensed under Apache 2.0.
 """
 
 __version__ = "2.0.0"
-__author__ = "AArambh Dev Hub"
+__author__ = "Aarambh Dev Hub"

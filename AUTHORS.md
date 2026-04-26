@@ -2,11 +2,11 @@
 
 ## Organization
 
-**AArambh Dev Hub** — [https://github.com/AArambhDevHub](https://github.com/AArambhDevHub)
+**Aarambh Dev Hub** — [https://github.com/AarambhDevHub](https://github.com/AarambhDevHub)
 
 ## Architecture Design
 
-The APEX-1 architecture was designed by the AArambh Dev Hub team, synthesizing
+The APEX-1 architecture was designed by the Aarambh Dev Hub team, synthesizing
 the best innovations from frontier AI labs into a single coherent design.
 
 ## Acknowledgments

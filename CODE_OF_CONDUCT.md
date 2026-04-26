@@ -42,8 +42,9 @@ an individual is officially representing the community in public spaces.
 ## Enforcement
 
 Instances of abusive, harassing, or otherwise unacceptable behavior may be
-reported to the community leaders responsible for enforcement at
-[dev@aarambhdevhub.org](mailto:dev@aarambhdevhub.org).
+reported to the community leaders via our
+[Discord server](https://discord.gg/HDth6PfCnp) or by opening a
+[GitHub Issue](https://github.com/AarambhDevHub/APEX-1/issues).
 
 All complaints will be reviewed and investigated promptly and fairly.
 

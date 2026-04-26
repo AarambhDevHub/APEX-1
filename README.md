@@ -91,7 +91,7 @@ Input tokens [batch, seq_len]
 
 ```bash
 # Clone
-git clone https://github.com/AArambhDevHub/APEX-1.git
+git clone https://github.com/AarambhDevHub/APEX-1.git
 cd APEX-1
 
 # Setup
@@ -160,11 +160,11 @@ APEX-1/
 ## Citation
 
 ```bibtex
-@software{apex1_2025,
+@software{apex1_2026,
   title  = {APEX-1: A Best-of-All-Worlds Large Language Model},
-  author = {AArambh Dev Hub},
-  year   = {2025},
-  url    = {https://github.com/AArambhDevHub/APEX-1},
+  author = {Aarambh Dev Hub},
+  year   = {2026},
+  url    = {https://github.com/AarambhDevHub/APEX-1},
   license = {Apache-2.0}
 }
 ```
@@ -183,6 +183,24 @@ APEX-1 stands on the shoulders of giants. We gratefully acknowledge the architec
 - **MiniMax** — Efficient MoE design
 - **Meta** (Llama 3) — GQA + sliding window, SwiGLU
 
+## 💬 Community
+
+Join our Discord for discussions, support, and updates:
+
+[![Discord](https://img.shields.io/badge/Discord-Join%20Server-5865F2?logo=discord&logoColor=white)](https://discord.gg/HDth6PfCnp)
+
+## ❤️ Support the Work
+
+If APEX-1 is useful to you, consider supporting the project:
+
+| Platform | Link |
+|---|---|
+| ☕ Buy Me a Coffee | [buymeacoffee.com/aarambhdevhub](https://buymeacoffee.com/aarambhdevhub) |
+| 💖 GitHub Sponsors | [github.com/sponsors/aarambh-darshan](https://github.com/sponsors/aarambh-darshan) |
+| 💳 Razorpay | [razorpay.me/@aarambhdevhub](https://razorpay.me/@aarambhdevhub) |
+
+Your support helps us continue building open-source AI for everyone. 🙏
+
 ## License
 
-[Apache License 2.0](LICENSE) — Copyright 2024-2025 AArambh Dev Hub
+[Apache License 2.0](LICENSE) — Copyright 2024-2026 Aarambh Dev Hub

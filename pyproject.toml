@@ -10,7 +10,7 @@ readme = "README.md"
 license = {text = "Apache-2.0"}
 requires-python = ">=3.10"
 authors = [
-    {name = "AArambh Dev Hub", email = "dev@aarambhdevhub.org"},
+    {name = "Aarambh Dev Hub"},
 ]
 keywords = ["llm", "transformer", "deep-learning", "moe", "mla", "nlp"]
 classifiers = [
@@ -52,10 +52,11 @@ dev = [
 all = ["apex-1[train,dev]"]
 
 [project.urls]
-Homepage = "https://github.com/AArambhDevHub/APEX-1"
-Repository = "https://github.com/AArambhDevHub/APEX-1"
-Issues = "https://github.com/AArambhDevHub/APEX-1/issues"
-Documentation = "https://github.com/AArambhDevHub/APEX-1/wiki"
+Homepage = "https://github.com/AarambhDevHub/APEX-1"
+Repository = "https://github.com/AarambhDevHub/APEX-1"
+Issues = "https://github.com/AarambhDevHub/APEX-1/issues"
+Documentation = "https://github.com/AarambhDevHub/APEX-1/wiki"
+Discord = "https://discord.gg/HDth6PfCnp"
 
 [tool.setuptools.packages.find]
 where = ["."]
