@@ -277,7 +277,7 @@ $$P(t) = \frac{\exp(z_t / T)}{\sum_j \exp(z_j / T)}$$
 
 Keep smallest set of tokens whose cumulative probability ≥ $p$:
 
-$$V_p = \arg\min_{V'} \left\{ |V'| : \sum_{t \in V'} P(t) \geq p \right\}$$
+$$V_p = \arg\min_{V'} \left\\{ |V'| : \sum_{t \in V'} P(t) \geq p \right\\}$$
 
 ```
 Sorted probs: [0.40, 0.25, 0.15, 0.10, 0.05, 0.03, 0.02]
@@ -407,7 +407,7 @@ Every mathematical formula used in APEX-1, in one reference:
 
 | # | Name | Formula |
 |---|---|---|
-| F22 | Pretrain loss | $L = \text{CE}(\text{logits}, \text{next\_tok})$ |
+| F22 | Pretrain loss | $L = \text{CE}(\text{logits}, \text{next-tok})$ |
 | F23 | Multi-token aux | $L_{\text{total}} = L_0 + 0.1 \sum_{k=1}^4 L_k$ |
 | F24 | SFT loss | $L = \text{CE}(\text{logits}, \text{labels})$; labels[non-asst] = $-100$ |
 | F25 | AdamW | $\theta -= \eta(\hat{m}/(\sqrt{\hat{v}}+\epsilon) + \lambda\theta)$ |
