@@ -108,9 +108,7 @@ def print_parameter_summary(model: nn.Module) -> str:
         if moe_layers:
             n_moe = len(moe_layers)
             _, first_moe = moe_layers[0]
-            expert_params = sum(
-                p.numel() for p in first_moe.routed_experts[0].parameters()
-            )
+            expert_params = sum(p.numel() for p in first_moe.routed_experts[0].parameters())
             lines.append(f"\nMoE layers:             {n_moe}")
             lines.append(f"Experts per MoE:        {first_moe.n_experts}")
             lines.append(f"Active experts/token:   {first_moe.n_active}")

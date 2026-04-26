@@ -23,7 +23,9 @@ import torch.nn.functional as F
 logger = logging.getLogger(__name__)
 
 
-def extract_thinking_steps(response_ids: list[int], thinking_start_id: int, thinking_end_id: int) -> list[list[int]]:
+def extract_thinking_steps(
+    response_ids: list[int], thinking_start_id: int, thinking_end_id: int
+) -> list[list[int]]:
     """Extract reasoning steps from a response's thinking section.
 
     Splits the thinking content into steps based on newline tokens.
@@ -81,9 +83,7 @@ def compute_sequence_log_prob(
     shift_targets = input_ids[:, 1:]
 
     log_probs = F.log_softmax(shift_logits, dim=-1)
-    token_log_probs = log_probs.gather(
-        2, shift_targets.unsqueeze(-1)
-    ).squeeze(-1)
+    token_log_probs = log_probs.gather(2, shift_targets.unsqueeze(-1)).squeeze(-1)
 
     start = max(0, response_start - 1)
     response_log_prob = token_log_probs[:, start:].sum(dim=-1)
@@ -248,9 +248,7 @@ def grpo_full_loop(
                     probs = torch.softmax(logits / 0.7, dim=-1)
                 model.train()
 
-            response_ids_list.append(
-                torch.tensor([tokens], device=prompt_ids.device)
-            )
+            response_ids_list.append(torch.tensor([tokens], device=prompt_ids.device))
 
         # Score responses
         rewards: list[float] = []
@@ -261,9 +259,15 @@ def grpo_full_loop(
 
         # GRPO step
         loss, metrics = grpo_training_step(
-            model, reference_model, optimizer,
-            prompt_ids, response_ids_list, rewards_tensor,
-            prompt_len, beta, clip_eps,
+            model,
+            reference_model,
+            optimizer,
+            prompt_ids,
+            response_ids_list,
+            rewards_tensor,
+            prompt_len,
+            beta,
+            clip_eps,
         )
         all_metrics.append(metrics)
 

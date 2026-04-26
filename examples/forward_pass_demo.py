@@ -1,8 +1,11 @@
 """Example: APEX-1 forward pass with random weights."""
+
 import torch
+
 from apex.config import get_tiny_config
 from apex.model.apex_model import APEX1Model
 from apex.utils.param_counter import print_parameter_summary
+
 
 def main():
     print("=== APEX-1 Forward Pass Demo ===\n")
@@ -24,6 +27,7 @@ def main():
     for i, (val, idx) in enumerate(zip(top5.values, top5.indices)):
         print(f"  {i+1}. Token {idx.item()} (logit: {val.item():.4f})")
     print("\n✓ Forward pass completed successfully!")
+
 
 if __name__ == "__main__":
     main()

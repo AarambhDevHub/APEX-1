@@ -63,9 +63,7 @@ class APEX1Tokenizer:
             from tokenizers import Tokenizer
             from tokenizers.models import BPE
         except ImportError:
-            raise ImportError(
-                "tokenizers library required. Install with: pip install tokenizers"
-            )
+            raise ImportError("tokenizers library required. Install with: pip install tokenizers")
 
         if tokenizer_path is not None and Path(tokenizer_path).exists():
             self._tokenizer = Tokenizer.from_file(str(tokenizer_path))
@@ -98,13 +96,57 @@ class APEX1Tokenizer:
 
         # Add some common tokens for basic functionality
         common_tokens = [
-            " ", "\n", "\t", ".", ",", "!", "?", ":", ";",
-            "the", "a", "an", "is", "are", "was", "were",
-            "in", "on", "at", "to", "for", "of", "and",
-            "The", "I", "you", "he", "she", "it", "we", "they",
-            "0", "1", "2", "3", "4", "5", "6", "7", "8", "9",
-            "def", "class", "import", "return", "if", "else",
-            "function", "var", "let", "const",
+            " ",
+            "\n",
+            "\t",
+            ".",
+            ",",
+            "!",
+            "?",
+            ":",
+            ";",
+            "the",
+            "a",
+            "an",
+            "is",
+            "are",
+            "was",
+            "were",
+            "in",
+            "on",
+            "at",
+            "to",
+            "for",
+            "of",
+            "and",
+            "The",
+            "I",
+            "you",
+            "he",
+            "she",
+            "it",
+            "we",
+            "they",
+            "0",
+            "1",
+            "2",
+            "3",
+            "4",
+            "5",
+            "6",
+            "7",
+            "8",
+            "9",
+            "def",
+            "class",
+            "import",
+            "return",
+            "if",
+            "else",
+            "function",
+            "var",
+            "let",
+            "const",
         ]
         self._tokenizer.add_tokens(common_tokens)
 

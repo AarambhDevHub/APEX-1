@@ -44,10 +44,9 @@ class MultiTokenHead(nn.Module):
         self.vocab_size = vocab_size
 
         # One small projection per future offset (1, 2, 3, 4 steps ahead)
-        self.heads = nn.ModuleList([
-            nn.Linear(d_model, vocab_size, bias=False)
-            for _ in range(n_predict)
-        ])
+        self.heads = nn.ModuleList(
+            [nn.Linear(d_model, vocab_size, bias=False) for _ in range(n_predict)]
+        )
 
     def forward(self, hidden_states: torch.Tensor) -> list[torch.Tensor]:
         """Compute speculative logits for each future offset.

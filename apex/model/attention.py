@@ -121,22 +121,20 @@ class MLAAttention(nn.Module):
         Q = Q.view(batch, seq_len, self.n_heads_q, self.d_head).transpose(1, 2)
 
         # Step 5: Decoupled RoPE — apply position encoding separately
-        Q_rope = self.W_QR(x).view(
-            batch, seq_len, self.n_heads_q, self.d_head_rope
-        ).transpose(1, 2)
+        Q_rope = self.W_QR(x).view(batch, seq_len, self.n_heads_q, self.d_head_rope).transpose(1, 2)
 
         # For K_rope, we need to project from original x (not from c_kv)
         # During inference with cache, we only have new x tokens
         if kv_cache is not None:
             # Only compute K_rope for new tokens, but we need all positions
             # We store K_rope in cache too — handled by concatenation
-            K_rope_new = self.W_KR(x).view(
-                batch, seq_len, self.n_heads_kv, self.d_head_rope
-            ).transpose(1, 2)
+            K_rope_new = (
+                self.W_KR(x).view(batch, seq_len, self.n_heads_kv, self.d_head_rope).transpose(1, 2)
+            )
         else:
-            K_rope_new = self.W_KR(x).view(
-                batch, seq_len, self.n_heads_kv, self.d_head_rope
-            ).transpose(1, 2)
+            K_rope_new = (
+                self.W_KR(x).view(batch, seq_len, self.n_heads_kv, self.d_head_rope).transpose(1, 2)
+            )
 
         # Build position indices for RoPE
         if kv_cache is not None:
@@ -151,17 +149,18 @@ class MLAAttention(nn.Module):
         # For Q: always use current positions
         cos_q = cos_cache[positions].unsqueeze(0).unsqueeze(0)  # [1, 1, seq, d_rope]
         sin_q = sin_cache[positions].unsqueeze(0).unsqueeze(0)
-        cos_q = cos_q[..., :self.d_head_rope]
-        sin_q = sin_q[..., :self.d_head_rope]
+        cos_q = cos_q[..., : self.d_head_rope]
+        sin_q = sin_q[..., : self.d_head_rope]
 
         from apex.model.rope import rotate_half
+
         Q_rope = Q_rope * cos_q + rotate_half(Q_rope) * sin_q
 
         # For K: apply to new tokens with their positions
         cos_k = cos_cache[k_positions].unsqueeze(0).unsqueeze(0)
         sin_k = sin_cache[k_positions].unsqueeze(0).unsqueeze(0)
-        cos_k = cos_k[..., :self.d_head_rope]
-        sin_k = sin_k[..., :self.d_head_rope]
+        cos_k = cos_k[..., : self.d_head_rope]
+        sin_k = sin_k[..., : self.d_head_rope]
         K_rope_new = K_rope_new * cos_k + rotate_half(K_rope_new) * sin_k
 
         # For cached K_rope, we need to handle reconstruction
@@ -171,8 +170,8 @@ class MLAAttention(nn.Module):
             # Reconstructing from cache: recompute cos/sin for all positions
             cos_all = cos_cache[all_k_positions].unsqueeze(0).unsqueeze(0)
             sin_all = sin_cache[all_k_positions].unsqueeze(0).unsqueeze(0)
-            cos_all = cos_all[..., :self.d_head_rope]
-            sin_all = sin_all[..., :self.d_head_rope]
+            cos_all = cos_all[..., : self.d_head_rope]
+            sin_all = sin_all[..., : self.d_head_rope]
 
             # Reconstruct K_rope from full c_kv using W_KR equivalent
             # Actually for simplicity, we reconstruct K from full c_kv
@@ -182,8 +181,7 @@ class MLAAttention(nn.Module):
             # This is a simplification — in production, K_rope should be cached
             prev_len = kv_cache.shape[1]
             K_rope_pad = torch.zeros(
-                batch, self.n_heads_kv, prev_len, self.d_head_rope,
-                device=x.device, dtype=x.dtype
+                batch, self.n_heads_kv, prev_len, self.d_head_rope, device=x.device, dtype=x.dtype
             )
             K_rope_full = torch.cat([K_rope_pad, K_rope_new], dim=2)
         else:
@@ -207,7 +205,9 @@ class MLAAttention(nn.Module):
             if attn_mask is not None:
                 if attn_mask.dim() == 2:
                     float_mask = attn_mask.unsqueeze(0).unsqueeze(0).float()
-                    float_mask = float_mask.masked_fill(~attn_mask.unsqueeze(0).unsqueeze(0), float("-inf"))
+                    float_mask = float_mask.masked_fill(
+                        ~attn_mask.unsqueeze(0).unsqueeze(0), float("-inf")
+                    )
                     float_mask = float_mask.masked_fill(attn_mask.unsqueeze(0).unsqueeze(0), 0.0)
                 else:
                     float_mask = torch.zeros_like(attn_mask, dtype=torch.float)
@@ -231,7 +231,7 @@ class MLAAttention(nn.Module):
                 # Expand mask to match scores shape
                 if mask_expanded.shape[-2:] != scores.shape[-2:]:
                     # Trim or pad mask
-                    mask_expanded = mask_expanded[..., :scores.shape[-2], :scores.shape[-1]]
+                    mask_expanded = mask_expanded[..., : scores.shape[-2], : scores.shape[-1]]
                 scores = scores.masked_fill(~mask_expanded, float("-inf"))
 
             weights = torch.softmax(scores, dim=-1)
@@ -316,8 +316,8 @@ class GQASlidingWindowAttention(nn.Module):
 
         # Trim KV cache to sliding window — only keep last local_window tokens
         if K.shape[2] > self.local_window:
-            K = K[:, :, -self.local_window:, :]
-            V = V[:, :, -self.local_window:, :]
+            K = K[:, :, -self.local_window :, :]
+            V = V[:, :, -self.local_window :, :]
 
         new_kv_cache = (K.detach(), V.detach())
 
@@ -334,14 +334,14 @@ class GQASlidingWindowAttention(nn.Module):
             if attn_mask is not None:
                 if attn_mask.dim() == 2:
                     m_slice = attn_mask[:seq_len, :kv_len]
-                    float_mask = torch.zeros(
-                        seq_len, kv_len, device=x.device, dtype=x.dtype
-                    )
+                    float_mask = torch.zeros(seq_len, kv_len, device=x.device, dtype=x.dtype)
                     float_mask = float_mask.masked_fill(~m_slice, float("-inf"))
                     float_mask = float_mask.unsqueeze(0).unsqueeze(0)
                 else:
                     float_mask = torch.zeros_like(attn_mask[..., :seq_len, :kv_len], dtype=x.dtype)
-                    float_mask = float_mask.masked_fill(~attn_mask[..., :seq_len, :kv_len], float("-inf"))
+                    float_mask = float_mask.masked_fill(
+                        ~attn_mask[..., :seq_len, :kv_len], float("-inf")
+                    )
             else:
                 float_mask = None
 
@@ -358,9 +358,7 @@ class GQASlidingWindowAttention(nn.Module):
                     mask_2d = attn_mask[:seq_len, :kv_len]
                     scores = scores.masked_fill(~mask_2d.unsqueeze(0).unsqueeze(0), float("-inf"))
                 else:
-                    scores = scores.masked_fill(
-                        ~attn_mask[..., :seq_len, :kv_len], float("-inf")
-                    )
+                    scores = scores.masked_fill(~attn_mask[..., :seq_len, :kv_len], float("-inf"))
             else:
                 # Default causal sliding window mask
                 sw_mask = torch.zeros(seq_len, kv_len, dtype=torch.bool, device=x.device)

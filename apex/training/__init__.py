@@ -6,9 +6,9 @@ mixed precision, distributed training, gradient accumulation,
 and checkpoint management.
 """
 
+from apex.training.checkpoint import load_checkpoint, save_checkpoint
+from apex.training.scheduler import CosineWarmupScheduler, get_lr
 from apex.training.trainer import PreTrainer, SFTTrainer
-from apex.training.scheduler import get_lr, CosineWarmupScheduler
-from apex.training.checkpoint import save_checkpoint, load_checkpoint
 
 __all__ = [
     "PreTrainer",

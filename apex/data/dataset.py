@@ -49,7 +49,9 @@ class PretrainDataset(Dataset):
 
         logger.info(
             "PretrainDataset: %d tokens, seq_len=%d, %d samples",
-            n_tokens, seq_len, self.n_samples,
+            n_tokens,
+            seq_len,
+            self.n_samples,
         )
 
     def __len__(self) -> int:
@@ -94,7 +96,8 @@ class SFTDataset(Dataset):
 
         logger.info(
             "SFTDataset: %d samples, max_seq_len=%d",
-            len(samples), max_seq_len,
+            len(samples),
+            max_seq_len,
         )
 
     def __len__(self) -> int:
@@ -111,8 +114,8 @@ class SFTDataset(Dataset):
             Dict with 'input_ids' and 'token_types' tensors.
         """
         sample = self.samples[idx]
-        input_ids = sample["input_ids"][:self.max_seq_len]
-        token_types = sample["token_types"][:self.max_seq_len]
+        input_ids = sample["input_ids"][: self.max_seq_len]
+        token_types = sample["token_types"][: self.max_seq_len]
 
         # Pad to max_seq_len
         pad_len = self.max_seq_len - len(input_ids)
@@ -155,10 +158,12 @@ class SFTDataset(Dataset):
                 input_ids = tokenizer.encode_chat(messages, add_generation_prompt=False)
                 token_types = tokenizer.get_token_types(input_ids)
 
-                samples.append({
-                    "input_ids": input_ids,
-                    "token_types": token_types,
-                })
+                samples.append(
+                    {
+                        "input_ids": input_ids,
+                        "token_types": token_types,
+                    }
+                )
 
         return cls(samples, max_seq_len, tokenizer.pad_token_id)
 
@@ -200,9 +205,9 @@ class PreferenceDataset(Dataset):
         """
         sample = self.samples[idx]
 
-        prompt = sample["prompt_ids"][:self.max_seq_len]
-        chosen = sample["chosen_ids"][:self.max_seq_len]
-        rejected = sample["rejected_ids"][:self.max_seq_len]
+        prompt = sample["prompt_ids"][: self.max_seq_len]
+        chosen = sample["chosen_ids"][: self.max_seq_len]
+        rejected = sample["rejected_ids"][: self.max_seq_len]
 
         return {
             "prompt_ids": torch.tensor(prompt, dtype=torch.long),
@@ -244,11 +249,13 @@ class PreferenceDataset(Dataset):
                     data["prompt"] + data["rejected"], add_special_tokens=False
                 )
 
-                samples.append({
-                    "prompt_ids": prompt_ids,
-                    "chosen_ids": chosen_ids,
-                    "rejected_ids": rejected_ids,
-                })
+                samples.append(
+                    {
+                        "prompt_ids": prompt_ids,
+                        "chosen_ids": chosen_ids,
+                        "rejected_ids": rejected_ids,
+                    }
+                )
 
         return cls(samples, max_seq_len, tokenizer.pad_token_id)
 
@@ -305,18 +312,12 @@ class StreamingPretrainDataset(IterableDataset):
                     buffer.extend(tokens)
 
                     while len(buffer) >= self.seq_len:
-                        yield {
-                            "input_ids": torch.tensor(
-                                buffer[:self.seq_len], dtype=torch.long
-                            )
-                        }
-                        buffer = buffer[self.seq_len:]
+                        yield {"input_ids": torch.tensor(buffer[: self.seq_len], dtype=torch.long)}
+                        buffer = buffer[self.seq_len :]
 
         # Yield remaining if enough tokens
         if len(buffer) >= self.seq_len // 2:
             # Pad to seq_len
             pad_len = self.seq_len - len(buffer)
             buffer.extend([self.tokenizer.pad_token_id] * pad_len)
-            yield {
-                "input_ids": torch.tensor(buffer[:self.seq_len], dtype=torch.long)
-            }
+            yield {"input_ids": torch.tensor(buffer[: self.seq_len], dtype=torch.long)}

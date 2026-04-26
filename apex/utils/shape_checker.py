@@ -71,8 +71,7 @@ def verify_shapes(config: APEXConfig, device: str = "cpu") -> dict[str, bool]:
             # MLA: c_kv should be [batch, seq, d_kv_compressed]
             if isinstance(kv, torch.Tensor):
                 results[f"layer_{layer_idx}_mla_cache"] = (
-                    kv.shape[0] == batch
-                    and kv.shape[2] == m.d_kv_compressed
+                    kv.shape[0] == batch and kv.shape[2] == m.d_kv_compressed
                 )
             else:
                 results[f"layer_{layer_idx}_mla_cache"] = False

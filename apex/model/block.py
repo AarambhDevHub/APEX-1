@@ -119,7 +119,7 @@ class APEXTransformerBlock(nn.Module):
             attn_mask,
             kv_cache,
         )
-        x = x + h   # residual
+        x = x + h  # residual
 
         # ── Dynamic skip gate — may bypass FFN ───────────────────────────
         if self.use_skip_gate:
@@ -147,7 +147,4 @@ class APEXTransformerBlock(nn.Module):
         attn_type = "MLA (global)" if self.is_global else "GQA+SW (local)"
         ffn_type = "MoE" if self.is_moe else "Dense"
         skip = "enabled" if self.use_skip_gate else "disabled"
-        return (
-            f"layer_idx={self.layer_idx}, "
-            f"attn={attn_type}, ffn={ffn_type}, skip_gate={skip}"
-        )
+        return f"layer_idx={self.layer_idx}, " f"attn={attn_type}, ffn={ffn_type}, skip_gate={skip}"

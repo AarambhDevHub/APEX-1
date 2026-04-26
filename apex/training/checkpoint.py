@@ -78,7 +78,10 @@ def save_checkpoint(
     torch.save(checkpoint, path)
     logger.info(
         "Checkpoint saved to %s (step=%d, epoch=%d, loss=%.4f)",
-        path, step, epoch, loss,
+        path,
+        step,
+        epoch,
+        loss,
     )
 
 

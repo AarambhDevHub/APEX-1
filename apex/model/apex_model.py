@@ -51,9 +51,7 @@ class APEX1Model(nn.Module):
         self.embed_scale = math.sqrt(m.d_model)
 
         # ── Transformer blocks ───────────────────────────────────────────
-        self.blocks = nn.ModuleList([
-            APEXTransformerBlock(i, config) for i in range(m.n_layers)
-        ])
+        self.blocks = nn.ModuleList([APEXTransformerBlock(i, config) for i in range(m.n_layers)])
 
         # ── Final norm ───────────────────────────────────────────────────
         self.final_norm = RMSNorm(m.d_model)
@@ -156,9 +154,7 @@ class APEX1Model(nn.Module):
                     prev_len = kv_caches[0][0].shape[2]
                 else:
                     prev_len = 0
-                positions = torch.arange(
-                    prev_len, prev_len + seq_len, device=device
-                )
+                positions = torch.arange(prev_len, prev_len + seq_len, device=device)
             else:
                 positions = torch.arange(seq_len, device=device)
 
@@ -253,9 +249,7 @@ class APEX1Model(nn.Module):
                     total += sum(p.numel() for p in expert.parameters())
                 # Only n_active routed experts active per token
                 if len(moe.routed_experts) > 0:
-                    expert_params = sum(
-                        p.numel() for p in moe.routed_experts[0].parameters()
-                    )
+                    expert_params = sum(p.numel() for p in moe.routed_experts[0].parameters())
                     total += expert_params * moe.n_active
                 # Router
                 total += sum(p.numel() for p in moe.router.parameters())

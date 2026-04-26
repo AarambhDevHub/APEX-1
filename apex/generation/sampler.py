@@ -57,9 +57,7 @@ def apply_top_p(logits: torch.Tensor, top_p: float) -> torch.Tensor:
         return logits
 
     sorted_logits, sorted_idx = torch.sort(logits, descending=True, dim=-1)
-    cumulative_probs = torch.cumsum(
-        torch.softmax(sorted_logits, dim=-1), dim=-1
-    )
+    cumulative_probs = torch.cumsum(torch.softmax(sorted_logits, dim=-1), dim=-1)
 
     # Remove tokens once cumulative probability exceeds top_p
     remove_mask = cumulative_probs > top_p

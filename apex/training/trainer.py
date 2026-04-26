@@ -130,13 +130,17 @@ class PreTrainer:
 
         logger.info(
             "PreTrainer initialized: device=%s, amp=%s, grad_accum=%d, world_size=%d",
-            self.device, self.use_amp, self.grad_accum_steps, world_size,
+            self.device,
+            self.use_amp,
+            self.grad_accum_steps,
+            world_size,
         )
 
     def _setup_ddp(self) -> None:
         """Set up DistributedDataParallel wrapper."""
         try:
             from torch.nn.parallel import DistributedDataParallel as DDP
+
             self.ddp_model = DDP(
                 self.model,
                 device_ids=[self.rank],
@@ -222,9 +226,7 @@ class PreTrainer:
                 if (self.global_step + 1) % self.grad_accum_steps == 0:
                     # Gradient clipping
                     self.scaler.unscale_(self.optimizer)
-                    torch.nn.utils.clip_grad_norm_(
-                        model.parameters(), tc.grad_clip
-                    )
+                    torch.nn.utils.clip_grad_norm_(model.parameters(), tc.grad_clip)
 
                     # Optimizer step
                     self.scaler.step(self.optimizer)
@@ -242,23 +244,27 @@ class PreTrainer:
                 # Logging
                 if self.global_step % log_interval == 0 and self.rank == 0:
                     avg_loss = running_loss / log_interval
-                    avg_time = sum(step_times[-log_interval:]) / min(
-                        log_interval, len(step_times)
-                    )
+                    avg_time = sum(step_times[-log_interval:]) / min(log_interval, len(step_times))
                     lr = self.optimizer.param_groups[0]["lr"]
                     logger.info(
                         "Step %d/%d | Loss: %.4f | LR: %.2e | Time: %.3fs/step",
-                        self.global_step, max_steps, avg_loss, lr, avg_time,
+                        self.global_step,
+                        max_steps,
+                        avg_loss,
+                        lr,
+                        avg_time,
                     )
 
                     if wandb_run is not None:
-                        wandb_run.log({
-                            "train/loss": avg_loss,
-                            "train/lr": lr,
-                            "train/step_time": avg_time,
-                            "train/step": self.global_step,
-                            **{f"train/{k}": v for k, v in metrics.items()},
-                        })
+                        wandb_run.log(
+                            {
+                                "train/loss": avg_loss,
+                                "train/lr": lr,
+                                "train/step_time": avg_time,
+                                "train/step": self.global_step,
+                                **{f"train/{k}": v for k, v in metrics.items()},
+                            }
+                        )
 
                     running_loss = 0.0
 
@@ -271,13 +277,16 @@ class PreTrainer:
                     val_loss = self._validate()
                     logger.info(
                         "Validation at step %d: loss=%.4f",
-                        self.global_step, val_loss,
+                        self.global_step,
+                        val_loss,
                     )
                     if wandb_run is not None:
-                        wandb_run.log({
-                            "val/loss": val_loss,
-                            "train/step": self.global_step,
-                        })
+                        wandb_run.log(
+                            {
+                                "val/loss": val_loss,
+                                "train/step": self.global_step,
+                            }
+                        )
 
                 # Checkpoint
                 if (
@@ -466,24 +475,30 @@ class SFTTrainer:
                     lr = self.optimizer.param_groups[0]["lr"]
                     logger.info(
                         "SFT Step %d/%d | Loss: %.4f | LR: %.2e",
-                        self.global_step, max_steps, avg_loss, lr,
+                        self.global_step,
+                        max_steps,
+                        avg_loss,
+                        lr,
                     )
                     if wandb_run is not None:
-                        wandb_run.log({
-                            "sft/loss": avg_loss,
-                            "sft/lr": lr,
-                            "sft/step": self.global_step,
-                        })
+                        wandb_run.log(
+                            {
+                                "sft/loss": avg_loss,
+                                "sft/lr": lr,
+                                "sft/step": self.global_step,
+                            }
+                        )
                     running_loss = 0.0
 
-                if (
-                    checkpoint_dir
-                    and self.global_step % checkpoint_interval == 0
-                ):
+                if checkpoint_dir and self.global_step % checkpoint_interval == 0:
                     ckpt_path = Path(checkpoint_dir) / f"sft_step_{self.global_step}.pt"
                     save_checkpoint(
-                        ckpt_path, self.model, self.optimizer, self.scheduler,
-                        step=self.global_step, loss=metrics.get("loss_sft", 0.0),
+                        ckpt_path,
+                        self.model,
+                        self.optimizer,
+                        self.scheduler,
+                        step=self.global_step,
+                        loss=metrics.get("loss_sft", 0.0),
                     )
 
         logger.info("SFT training complete at step %d", self.global_step)

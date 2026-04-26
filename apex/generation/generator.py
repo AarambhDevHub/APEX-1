@@ -174,8 +174,7 @@ class APEX1Generator:
                         current_temperature = cfg.output_temperature
                         token_id = cfg.thinking_end_id
                         logger.debug(
-                            "Thinking budget exhausted (%d tokens), "
-                            "forcing close at step %d",
+                            "Thinking budget exhausted (%d tokens), " "forcing close at step %d",
                             thinking_token_count,
                             step,
                         )
@@ -186,9 +185,7 @@ class APEX1Generator:
                     logger.debug("Exited thinking mode at step %d", step)
 
             # Forward pass for next token
-            next_input = torch.tensor(
-                [[token_id]], device=self.device, dtype=torch.long
-            )
+            next_input = torch.tensor([[token_id]], device=self.device, dtype=torch.long)
             output = self.model(
                 next_input,
                 kv_caches=kv_caches,
@@ -200,10 +197,7 @@ class APEX1Generator:
             token_ids=generated_ids,
             thinking_tokens=thinking_token_count,
             total_tokens=len(generated_ids),
-            finished=(
-                len(generated_ids) > 0
-                and generated_ids[-1] == cfg.eos_token_id
-            ),
+            finished=(len(generated_ids) > 0 and generated_ids[-1] == cfg.eos_token_id),
         )
 
     @torch.no_grad()
@@ -319,17 +313,14 @@ class APEX1Generator:
             # Update next_logits to the position after the last accepted token
             next_logits = verify_logits[0, accepted, :]
 
-            if any(t == cfg.eos_token_id for t in generated_ids[-accepted - 1:]):
+            if any(t == cfg.eos_token_id for t in generated_ids[-accepted - 1 :]):
                 break
 
             if len(generated_ids) >= cfg.max_new_tokens:
                 break
 
         return GenerationOutput(
-            token_ids=generated_ids[:cfg.max_new_tokens],
-            total_tokens=len(generated_ids[:cfg.max_new_tokens]),
-            finished=(
-                len(generated_ids) > 0
-                and generated_ids[-1] == cfg.eos_token_id
-            ),
+            token_ids=generated_ids[: cfg.max_new_tokens],
+            total_tokens=len(generated_ids[: cfg.max_new_tokens]),
+            finished=(len(generated_ids) > 0 and generated_ids[-1] == cfg.eos_token_id),
         )

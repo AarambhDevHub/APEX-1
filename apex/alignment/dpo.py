@@ -41,9 +41,7 @@ def compute_sequence_logprob(
 
     # Compute per-token log probs
     log_probs = F.log_softmax(shift_logits, dim=-1)
-    token_log_probs = log_probs.gather(
-        2, shift_targets.unsqueeze(-1)
-    ).squeeze(-1)
+    token_log_probs = log_probs.gather(2, shift_targets.unsqueeze(-1)).squeeze(-1)
 
     # Sum only response tokens (from response_start_idx - 1 due to shift)
     start = max(0, response_start_idx - 1)

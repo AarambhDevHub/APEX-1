@@ -195,9 +195,7 @@ class ConstitutionalAI:
             )
 
         # Build revision prompt
-        violation_text = "\n".join(
-            f"- Violates: {v.principle}" for v in violations
-        )
+        violation_text = "\n".join(f"- Violates: {v.principle}" for v in violations)
         revision_prompt = (
             f"Original response: {response}\n\n"
             f"The following principles were violated:\n{violation_text}\n\n"
@@ -243,14 +241,17 @@ class ConstitutionalAI:
             result = self.revise_response(response, prompt)
 
             if result.violation_count > 0:
-                pairs.append((
-                    prompt,
-                    result.original_response,
-                    result.revised_response,
-                ))
+                pairs.append(
+                    (
+                        prompt,
+                        result.original_response,
+                        result.revised_response,
+                    )
+                )
 
         logger.info(
             "Generated %d constitutional training pairs from %d prompts",
-            len(pairs), len(prompts),
+            len(pairs),
+            len(prompts),
         )
         return pairs

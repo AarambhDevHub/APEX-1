@@ -124,8 +124,6 @@ class ProcessRewardModel(nn.Module):
         step_ids_list = []
         for step in steps:
             ids = tokenizer.encode("\n" + step, add_special_tokens=False)
-            step_ids_list.append(
-                torch.tensor(ids, device=prompt_ids.device)
-            )
+            step_ids_list.append(torch.tensor(ids, device=prompt_ids.device))
 
         return self.score_steps(prompt_ids, step_ids_list)

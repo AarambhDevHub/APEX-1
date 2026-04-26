@@ -115,8 +115,12 @@ def build_reward_function(
             constitutional_s = 1.0  # assume safe if no checker
 
         return combined_reward(
-            outcome_r, process_r, constitutional_s,
-            w_outcome, w_process, w_constitutional,
+            outcome_r,
+            process_r,
+            constitutional_s,
+            w_outcome,
+            w_process,
+            w_constitutional,
         )
 
     return reward_fn
@@ -139,7 +143,7 @@ def _extract_thinking_text(response: str) -> list[str]:
     end_idx = response.find(end_tag)
 
     if start_idx != -1 and end_idx != -1 and end_idx > start_idx:
-        thinking_text = response[start_idx + len(start_tag):end_idx].strip()
+        thinking_text = response[start_idx + len(start_tag) : end_idx].strip()
         # Split by newlines into steps
         for line in thinking_text.split("\n"):
             line = line.strip()

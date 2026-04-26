@@ -1,6 +1,9 @@
 """Example: Attention mask visualization."""
+
 import torch
+
 from apex.model.mask import build_apex_attention_mask
+
 
 def main():
     print("=== APEX-1 Attention Mask Visualization ===\n")
@@ -17,12 +20,14 @@ def main():
     print("\nLegend: █=attend  ·=masked")
     print("Rows 0-3 are prefix (bidirectional), rows 4+ are generation (causal)")
 
+
 def _print_mask(mask):
     for i in range(mask.shape[0]):
         row = ""
         for j in range(mask.shape[1]):
             row += "█ " if mask[i, j] else "· "
         print(f"  pos {i:2d}: {row}")
+
 
 if __name__ == "__main__":
     main()

@@ -77,7 +77,7 @@ def rotate_half(x: torch.Tensor) -> torch.Tensor:
     Returns:
         Rotated tensor of the same shape.
     """
-    x1 = x[..., ::2]   # even indices
+    x1 = x[..., ::2]  # even indices
     x2 = x[..., 1::2]  # odd indices
     return torch.stack([-x2, x1], dim=-1).flatten(-2)
 

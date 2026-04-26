@@ -1,23 +1,32 @@
 """Unit tests for all APEX-1 core modules."""
-import torch
+
 import pytest
-from apex.config import get_tiny_config, APEXConfig
-from apex.model.norm import RMSNorm
-from apex.model.rope import precompute_rope_cache, rotate_half, apply_rope, apply_yarn_scaling
-from apex.model.mask import build_apex_attention_mask, is_global_layer
-from apex.model.skip_gate import SkipGate
+import torch
+
+from apex.config import APEXConfig, get_tiny_config
+from apex.generation.sampler import (
+    apply_repetition_penalty,
+    apply_temperature,
+    apply_top_k,
+    apply_top_p,
+    sample_next_token,
+)
+from apex.model.apex_model import APEX1Model
+from apex.model.attention import GQASlidingWindowAttention, MLAAttention
+from apex.model.block import APEXTransformerBlock
 from apex.model.ffn import DenseFFN, MoEFFN
 from apex.model.load_balancer import LoadBalancer
-from apex.model.attention import MLAAttention, GQASlidingWindowAttention
-from apex.model.block import APEXTransformerBlock
+from apex.model.mask import build_apex_attention_mask, is_global_layer
 from apex.model.multi_token_head import MultiTokenHead
-from apex.model.apex_model import APEX1Model
-from apex.generation.sampler import sample_next_token, apply_temperature, apply_top_p, apply_top_k, apply_repetition_penalty
-from apex.training.scheduler import get_lr, CosineWarmupScheduler
+from apex.model.norm import RMSNorm
+from apex.model.rope import apply_rope, apply_yarn_scaling, precompute_rope_cache, rotate_half
+from apex.model.skip_gate import SkipGate
+from apex.training.checkpoint import load_checkpoint, save_checkpoint
 from apex.training.losses import compute_pretrain_loss, compute_sft_loss
-from apex.training.checkpoint import save_checkpoint, load_checkpoint
+from apex.training.scheduler import CosineWarmupScheduler, get_lr
 
 CFG = get_tiny_config()
+
 
 # ── RMSNorm ──────────────────────────────────────────────────────────────────
 class TestRMSNorm:
@@ -38,6 +47,7 @@ class TestRMSNorm:
         x = torch.zeros(1, 1, 64)
         out = norm(x)
         assert not torch.isnan(out).any()
+
 
 # ── RoPE ─────────────────────────────────────────────────────────────────────
 class TestRoPE:
@@ -76,6 +86,7 @@ class TestRoPE:
         assert factor == 1.0
         assert torch.allclose(scaled, theta)
 
+
 # ── Attention Masks ──────────────────────────────────────────────────────────
 class TestMask:
     def test_global_mask_shape(self):
@@ -102,6 +113,7 @@ class TestMask:
         assert is_global_layer(11, 6) == True
         assert is_global_layer(3, 6) == False
 
+
 # ── SkipGate ─────────────────────────────────────────────────────────────────
 class TestSkipGate:
     def test_output_shape(self):
@@ -121,12 +133,14 @@ class TestSkipGate:
         mask = gate.get_skip_mask(x)
         assert mask.dtype == torch.bool
 
+
 # ── DenseFFN ─────────────────────────────────────────────────────────────────
 class TestDenseFFN:
     def test_output_shape(self):
         ffn = DenseFFN(CFG)
         x = torch.randn(2, 8, CFG.model.d_model)
         assert ffn(x).shape == x.shape
+
 
 # ── MoEFFN ───────────────────────────────────────────────────────────────────
 class TestMoEFFN:
@@ -148,6 +162,7 @@ class TestMoEFFN:
         new_bias = torch.ones(CFG.moe.n_experts) * 0.5
         ffn.set_expert_bias(new_bias)
         assert torch.allclose(ffn.expert_bias, new_bias)
+
 
 # ── LoadBalancer ─────────────────────────────────────────────────────────────
 class TestLoadBalancer:
@@ -178,6 +193,7 @@ class TestLoadBalancer:
         lb2.load_state_dict(state)
         assert torch.allclose(lb.bias, lb2.bias)
 
+
 # ── Attention ────────────────────────────────────────────────────────────────
 class TestAttention:
     def test_mla_output_shape(self):
@@ -206,6 +222,7 @@ class TestAttention:
         out, kv = gqa(x, cos, sin, pos)
         assert out.shape == (1, 8, CFG.model.d_model)
 
+
 # ── TransformerBlock ─────────────────────────────────────────────────────────
 class TestBlock:
     def test_local_block(self):
@@ -224,6 +241,7 @@ class TestBlock:
         out, _ = block(x, cos, sin, torch.arange(8))
         assert out.shape == x.shape
 
+
 # ── MultiTokenHead ───────────────────────────────────────────────────────────
 class TestMultiTokenHead:
     def test_output(self):
@@ -238,6 +256,7 @@ class TestMultiTokenHead:
         h = torch.randn(1, 1, 64)
         drafts = head.draft_tokens(h)
         assert drafts.shape == (1, 4)
+
 
 # ── Full Model ───────────────────────────────────────────────────────────────
 class TestAPEX1Model:
@@ -275,6 +294,7 @@ class TestAPEX1Model:
         assert model.active_parameters() > 0
         assert model.active_parameters() <= model.total_parameters()
 
+
 # ── Sampler ──────────────────────────────────────────────────────────────────
 class TestSampler:
     def test_temperature(self):
@@ -302,6 +322,7 @@ class TestSampler:
         token = sample_next_token(logits, temperature=1.0)
         assert 0 <= token.item() < 1000
 
+
 # ── Scheduler ────────────────────────────────────────────────────────────────
 class TestScheduler:
     def test_warmup(self):
@@ -318,6 +339,7 @@ class TestScheduler:
         lr_mid = get_lr(550, 100, 1000, 1e-3)
         lr_end = get_lr(999, 100, 1000, 1e-3)
         assert lr_mid > lr_end
+
 
 # ── Losses ───────────────────────────────────────────────────────────────────
 class TestLosses:
@@ -337,6 +359,7 @@ class TestLosses:
         loss, metrics = compute_sft_loss(logits, ids, types, 1000)
         assert loss.item() > 0
 
+
 # ── Checkpoint ───────────────────────────────────────────────────────────────
 class TestCheckpoint:
     def test_save_load(self, tmp_path):
@@ -350,6 +373,7 @@ class TestCheckpoint:
         assert info["step"] == 42
         for p1, p2 in zip(model.parameters(), model2.parameters()):
             assert torch.allclose(p1, p2)
+
 
 # ── Config ───────────────────────────────────────────────────────────────────
 class TestConfig:

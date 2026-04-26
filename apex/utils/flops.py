@@ -60,7 +60,9 @@ def estimate_flops(config: APEXConfig, seq_len: int | None = None) -> dict[str, 
             # Output projection
             out_proj = 2 * S * (m.n_heads_q * m.d_head) * m.d_model
 
-            layer_attn = q_comp + q_decomp + kv_comp + kv_decomp + rope + attn_score + attn_val + out_proj
+            layer_attn = (
+                q_comp + q_decomp + kv_comp + kv_decomp + rope + attn_score + attn_val + out_proj
+            )
         else:
             n_local += 1
             # GQA attention FLOPs

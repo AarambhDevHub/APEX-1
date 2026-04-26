@@ -62,7 +62,7 @@ def build_apex_attention_mask(
         # Local layer: causal + sliding window
         for i in range(prefix_len, total_len):
             start = max(0, i - local_window + 1)
-            mask[i, start: i + 1] = True
+            mask[i, start : i + 1] = True
 
     return mask
 

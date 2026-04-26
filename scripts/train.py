@@ -18,8 +18,8 @@ from pathlib import Path
 import torch
 
 from apex.config import APEXConfig
-from apex.data.dataset import PretrainDataset, SFTDataset
 from apex.data.data_loader import create_pretrain_loader, create_sft_loader
+from apex.data.dataset import PretrainDataset, SFTDataset
 from apex.model.apex_model import APEX1Model
 from apex.training.checkpoint import load_checkpoint
 from apex.training.trainer import PreTrainer, SFTTrainer
@@ -78,6 +78,7 @@ def main():
     if args.wandb:
         try:
             import wandb
+
             wandb_run = wandb.init(project="apex-1", config=vars(config))
         except ImportError:
             logger.warning("wandb not installed, skipping")
@@ -99,7 +100,9 @@ def main():
         seq_len = config.training.seq_len
         for _ in range(1000):
             ids = torch.randint(0, config.model.vocab_size, (seq_len,)).tolist()
-            types = [0] * (seq_len // 3) + [1] * (seq_len // 3) + [2] * (seq_len - 2 * (seq_len // 3))
+            types = (
+                [0] * (seq_len // 3) + [1] * (seq_len // 3) + [2] * (seq_len - 2 * (seq_len // 3))
+            )
             samples.append({"input_ids": ids, "token_types": types})
 
         dataset = SFTDataset(samples, max_seq_len=seq_len)
