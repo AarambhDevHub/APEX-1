@@ -256,7 +256,7 @@ APEX-1 combines three masking strategies:
 
 ### 11.2 Layer Assignment Rule
 
-$$\text{is\_global}(l) = \left( l \bmod F_g \right) = \left( F_g - 1 \right)$$
+$$\text{is-global}(l) = \left( l \bmod F_g \right) = \left( F_g - 1 \right)$$
 
 With $F_g = 6$: layers 5, 11, 17, 23, ... are **global** (MLA), all others are **local** (GQA+SW).
 

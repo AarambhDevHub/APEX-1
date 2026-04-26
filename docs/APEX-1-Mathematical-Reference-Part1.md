@@ -205,9 +205,9 @@ $$\theta_i = \frac{1}{10000^{2i / d_h}} \quad \text{for } i = 0, 1, \ldots, \fra
 
 The full rotation can be written compactly as:
 
-$$\text{RoPE}(\mathbf{x}, m) = \mathbf{x} \odot \cos(\mathbf{m\Theta}) + \text{rotate\_half}(\mathbf{x}) \odot \sin(\mathbf{m\Theta})$$
+$$\text{RoPE}(\mathbf{x}, m) = \mathbf{x} \odot \cos(\mathbf{m\Theta}) + \text{rotate-half}(\mathbf{x}) \odot \sin(\mathbf{m\Theta})$$
 
-Where $\text{rotate\_half}$ swaps and negates adjacent pairs: $[x_0, x_1, x_2, x_3] \rightarrow [-x_1, x_0, -x_3, x_2]$
+Where $\text{rotate-half}$ swaps and negates adjacent pairs: $[x_0, x_1, x_2, x_3] \rightarrow [-x_1, x_0, -x_3, x_2]$
 
 ### 4.5 Why Rotation Encodes Relative Position
 
@@ -301,7 +301,7 @@ Where $\lambda_i = \frac{2\pi}{\theta_i}$ is the wavelength.
 
 At long context, attention entropy increases (scores become more uniform). YaRN counteracts this with a temperature correction:
 
-$$\text{attn\_factor} = 0.1 \times \ln(s) + 1.0$$
+$$\text{attn-factor} = 0.1 \times \ln(s) + 1.0$$
 
 This is multiplied into attention scores to maintain sharpness.
 

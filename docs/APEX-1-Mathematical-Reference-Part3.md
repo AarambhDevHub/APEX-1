@@ -243,7 +243,7 @@ At convergence: **25-35% of tokens skip** with < 0.3% quality loss.
 
 ### 15.5 Compute Savings
 
-$$\text{Savings} = \text{skip\_rate} \times \text{FFN\_FLOPs}$$
+$$\text{Savings} = \text{skip-rate} \times \text{FFN\_FLOPs}$$
 
 FFN is ~67% of each block's compute. With 30% skip rate:
 

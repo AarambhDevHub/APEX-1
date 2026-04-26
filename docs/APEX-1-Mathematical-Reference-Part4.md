@@ -143,7 +143,7 @@ Where $\mathbf{y}_w$ = chosen, $\mathbf{y}_l$ = rejected.
 
 ### 19.5 Sequence Log-Probability
 
-$$\log \pi(\mathbf{y} | \mathbf{x}) = \sum_{t=|\mathbf{x}|}^{|\mathbf{x}|+|\mathbf{y}|} \log P(y_t | y_{<t}, \mathbf{x})$$
+$$\log \pi(\mathbf{y} | \mathbf{x}) = \sum_{t=|\mathbf{x}|}^{|\mathbf{x}|+|\mathbf{y}|} \log P(y_t | y_{\lt t}, \mathbf{x})$$
 
 Only response tokens contribute — prompt tokens are excluded.
 
