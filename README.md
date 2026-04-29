@@ -2,12 +2,12 @@
 
 # 🔺 APEX-1
 
-### A Best-of-All-Worlds Large Language Model — v2.0
+### A Best-of-All-Worlds Large Language Model — v2.1.0
 
 [![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](LICENSE)
 [![Python](https://img.shields.io/badge/Python-3.10%2B-green.svg)](https://python.org)
 [![Status](https://img.shields.io/badge/Status-Architecture%20Complete-brightgreen.svg)]()
-[![Tests](https://img.shields.io/badge/Tests-Passing-success.svg)]()
+[![Tests](https://img.shields.io/badge/Tests-86%20Passing-success.svg)]()
 
 **Inspired by:** Claude · GPT-4.5 · DeepSeek-V3/R1 · Qwen3 · Gemma 4 · GLM-4 · KIMI · MiniMax · Llama 3
 
@@ -16,6 +16,17 @@
 </div>
 
 ---
+
+## What's New in v2.1.0
+
+- **15 bug fixes** across model core, alignment pipeline, training, and generation — including critical fixes to MLA KV caching (BUG-01), attention output projection (BUG-02), and Constitutional AI (BUG-03).
+- **Vectorised mask building** — sliding-window and global masks now use `torch.arange` broadcasting instead of Python loops, dramatically faster at long contexts.
+- **Vectorised YaRN scaling** — `apply_yarn_scaling` replaced per-dimension Python loop with `torch.where` operations.
+- **Load balancer optimised** — expert counting uses `torch.bincount` instead of a Python loop.
+- **Shape checker fixed** — `verify_shapes()` correctly validates the updated MLA tuple cache format.
+- **86 tests passing** — comprehensive regression test suite covering all fixed bugs.
+
+See the full [CHANGELOG](CHANGELOG.md) for details.
 
 ## Overview
 

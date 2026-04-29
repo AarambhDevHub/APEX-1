@@ -7,9 +7,19 @@ on human preference data using the Bradley-Terry loss.
 
 Architecture: SFT backbone + Linear(d_model, 1) reward head
 Loss: -log(sigmoid(r_chosen - r_rejected))
+
+Fix BUG-05: ``Optional`` is now imported at the top of the file instead
+of at the bottom, which previously caused a ``NameError`` when
+``forward()`` was called before the import was reached.
 """
 
 from __future__ import annotations
+
+# BUG-05 FIX: ``Optional`` must be imported BEFORE it is used in the
+# ``forward()`` signature below.  The original code placed this import at
+# the very end of the file, causing a ``NameError`` at class-definition
+# time in Python 3.10+ (annotations are evaluated eagerly in some paths).
+from typing import Optional
 
 import torch
 import torch.nn as nn
@@ -92,7 +102,3 @@ def reward_model_loss(
         Scalar loss value.
     """
     return -torch.log(torch.sigmoid(reward_chosen - reward_rejected)).mean()
-
-
-# Make Optional available without separate import
-from typing import Optional

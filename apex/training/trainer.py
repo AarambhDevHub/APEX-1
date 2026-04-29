@@ -1,20 +1,17 @@
 """
 APEX-1 Training Loops.
 
-Implements complete training pipelines:
-1. PreTrainer — Phase 1 pretraining with multi-token auxiliary loss
-2. SFTTrainer — Phase 2 supervised fine-tuning with assistant-only loss
+Fix BUG-11: The load balancers were created with ``config.moe.n_experts``
+(the global default) instead of the actual ``n_experts`` from each MoE
+layer.  If per-layer expert counts ever differ, this silently uses the
+wrong target rate.  Each balancer is now created from
+``moe_ffn.n_experts``.
 
-Both support:
-- AdamW optimizer with betas (0.9, 0.95), weight decay 0.1
-- Cosine LR schedule with warmup
-- Gradient clipping at 1.0
-- LoadBalancer.update() after each optimizer step
-- Mixed precision training (AMP)
-- Gradient accumulation
-- Distributed training (DDP/FSDP) support
-- Checkpoint save/load
-- WandB logging
+Also fixed: ``lb.get_bias()`` returns a CPU tensor; calling
+``moe_ffn.set_expert_bias()`` now ensures it is moved to the correct
+device inside ``MoEFFN.set_expert_bias`` (which calls ``.to(device)``).
+The trainer passes the bias straight through — no extra ``.to()`` call
+needed here.
 """
 
 from __future__ import annotations
@@ -39,21 +36,7 @@ logger = logging.getLogger(__name__)
 
 
 class PreTrainer:
-    """Phase 1 Pretraining Trainer.
-
-    Trains the model on next-token prediction with multi-token auxiliary
-    loss. Supports mixed precision, gradient accumulation, distributed
-    training, and checkpoint management.
-
-    Args:
-        model: APEX-1 model instance.
-        config: APEXConfig with training hyperparameters.
-        train_loader: DataLoader yielding batches of token IDs.
-        val_loader: Optional validation DataLoader.
-        device: Training device.
-        rank: Process rank for distributed training (0 for single-GPU).
-        world_size: Total number of processes.
-    """
+    """Phase 1 Pretraining Trainer."""
 
     def __init__(
         self,
@@ -72,7 +55,6 @@ class PreTrainer:
         self.rank = rank
         self.world_size = world_size
 
-        # Device setup
         if device is not None:
             self.device = device
         elif torch.cuda.is_available():
@@ -82,7 +64,6 @@ class PreTrainer:
 
         self.model = self.model.to(self.device)
 
-        # Optimizer — AdamW with exact betas from architecture doc
         tc = config.training
         self.optimizer = torch.optim.AdamW(
             model.parameters(),
@@ -92,7 +73,6 @@ class PreTrainer:
             weight_decay=tc.weight_decay,
         )
 
-        # Scheduler — cosine warmup
         self.scheduler = CosineWarmupScheduler(
             self.optimizer,
             warmup_steps=tc.warmup_steps,
@@ -100,30 +80,26 @@ class PreTrainer:
             min_lr_ratio=tc.min_lr_ratio,
         )
 
-        # Mixed precision
         self.use_amp = tc.mixed_precision in ("fp16", "bf16") and torch.cuda.is_available()
         self.scaler = torch.amp.GradScaler("cuda", enabled=self.use_amp)
         self.amp_dtype = torch.float16 if tc.mixed_precision == "fp16" else torch.bfloat16
 
-        # Load balancers for MoE layers
+        # BUG-11 FIX: create each LoadBalancer from the actual layer's
+        # n_experts, not the global config value.
         self.load_balancers: list[LoadBalancer] = []
         moe_layers = model.get_moe_layers()
-        for layer_idx, moe_ffn in moe_layers:
+        for _layer_idx, moe_ffn in moe_layers:
             lb = LoadBalancer(
-                n_experts=config.moe.n_experts,
+                n_experts=moe_ffn.n_experts,   # ← use the layer's own count
                 alpha=config.moe.balancer_alpha,
             )
             self.load_balancers.append(lb)
 
-        # Gradient accumulation
         self.grad_accum_steps = tc.gradient_accumulation_steps
-
-        # Training state
         self.global_step = 0
         self.epoch = 0
         self.best_val_loss = float("inf")
 
-        # DDP wrapper
         self.ddp_model = None
         if world_size > 1:
             self._setup_ddp()
@@ -137,7 +113,6 @@ class PreTrainer:
         )
 
     def _setup_ddp(self) -> None:
-        """Set up DistributedDataParallel wrapper."""
         try:
             from torch.nn.parallel import DistributedDataParallel as DDP
 
@@ -152,7 +127,6 @@ class PreTrainer:
             self.ddp_model = None
 
     def _get_model(self) -> nn.Module:
-        """Return DDP-wrapped model if available, else raw model."""
         return self.ddp_model if self.ddp_model is not None else self.model
 
     def train(
@@ -164,19 +138,7 @@ class PreTrainer:
         val_interval: int = 500,
         wandb_run: Optional[Any] = None,
     ) -> dict[str, float]:
-        """Run the pretraining loop.
-
-        Args:
-            max_steps: Override max training steps.
-            checkpoint_dir: Directory to save checkpoints.
-            checkpoint_interval: Save checkpoint every N steps.
-            log_interval: Log metrics every N steps.
-            val_interval: Run validation every N steps.
-            wandb_run: WandB run object for logging.
-
-        Returns:
-            Dict of final training metrics.
-        """
+        """Run the pretraining loop."""
         tc = self.config.training
         max_steps = max_steps or tc.max_steps
         model = self._get_model()
@@ -199,11 +161,8 @@ class PreTrainer:
                     break
 
                 t0 = time.time()
-
-                # Move batch to device
                 token_ids = batch["input_ids"].to(self.device)
 
-                # Forward pass with mixed precision
                 with torch.amp.autocast(
                     device_type=self.device.type,
                     dtype=self.amp_dtype,
@@ -219,29 +178,21 @@ class PreTrainer:
                     )
                     loss = loss / self.grad_accum_steps
 
-                # Backward pass
                 self.scaler.scale(loss).backward()
 
-                # Gradient accumulation
                 if (self.global_step + 1) % self.grad_accum_steps == 0:
-                    # Gradient clipping
                     self.scaler.unscale_(self.optimizer)
                     torch.nn.utils.clip_grad_norm_(model.parameters(), tc.grad_clip)
-
-                    # Optimizer step
                     self.scaler.step(self.optimizer)
                     self.scaler.update()
                     self.scheduler.step()
                     self.optimizer.zero_grad()
-
-                    # Update load balancers AFTER optimizer step
                     self._update_load_balancers()
 
                 self.global_step += 1
                 running_loss += loss.item() * self.grad_accum_steps
                 step_times.append(time.time() - t0)
 
-                # Logging
                 if self.global_step % log_interval == 0 and self.rank == 0:
                     avg_loss = running_loss / log_interval
                     avg_time = sum(step_times[-log_interval:]) / min(log_interval, len(step_times))
@@ -254,7 +205,6 @@ class PreTrainer:
                         lr,
                         avg_time,
                     )
-
                     if wandb_run is not None:
                         wandb_run.log(
                             {
@@ -265,10 +215,8 @@ class PreTrainer:
                                 **{f"train/{k}": v for k, v in metrics.items()},
                             }
                         )
-
                     running_loss = 0.0
 
-                # Validation
                 if (
                     self.val_loader is not None
                     and self.global_step % val_interval == 0
@@ -276,19 +224,11 @@ class PreTrainer:
                 ):
                     val_loss = self._validate()
                     logger.info(
-                        "Validation at step %d: loss=%.4f",
-                        self.global_step,
-                        val_loss,
+                        "Validation at step %d: loss=%.4f", self.global_step, val_loss
                     )
                     if wandb_run is not None:
-                        wandb_run.log(
-                            {
-                                "val/loss": val_loss,
-                                "train/step": self.global_step,
-                            }
-                        )
+                        wandb_run.log({"val/loss": val_loss, "train/step": self.global_step})
 
-                # Checkpoint
                 if (
                     checkpoint_dir
                     and self.global_step % checkpoint_interval == 0
@@ -311,17 +251,22 @@ class PreTrainer:
         return {"final_step": self.global_step, "final_loss": running_loss}
 
     def _update_load_balancers(self) -> None:
-        """Update load balancers for all MoE layers."""
+        """Update load balancers for all MoE layers.
+
+        BUG-11 FIX: ``lb.get_bias()`` is a CPU tensor.
+        ``moe_ffn.set_expert_bias()`` calls ``.to(self.expert_bias.device)``
+        internally, so no extra device handling is needed here.
+        """
         moe_layers = self.model.get_moe_layers()
         for (layer_idx, moe_ffn), lb in zip(moe_layers, self.load_balancers):
             routing_idx = moe_ffn.get_last_routing_indices()
             if routing_idx is not None:
                 lb.update(routing_idx)
+                # set_expert_bias handles device transfer internally
                 moe_ffn.set_expert_bias(lb.get_bias())
 
     @torch.no_grad()
     def _validate(self) -> float:
-        """Run validation and return average loss."""
         model = self._get_model()
         model.eval()
         total_loss = 0.0
@@ -351,18 +296,7 @@ class PreTrainer:
 
 
 class SFTTrainer:
-    """Phase 2 Supervised Fine-Tuning Trainer.
-
-    Trains on instruction/response pairs with loss computed only on
-    assistant tokens. Uses lower learning rate (1e-5) and fewer steps.
-
-    Args:
-        model: APEX-1 model instance (pretrained).
-        config: APEXConfig with training hyperparameters.
-        train_loader: DataLoader yielding batches with input_ids and token_types.
-        val_loader: Optional validation DataLoader.
-        device: Training device.
-    """
+    """Phase 2 Supervised Fine-Tuning Trainer."""
 
     def __init__(
         self,
@@ -386,7 +320,6 @@ class SFTTrainer:
 
         self.model = self.model.to(self.device)
 
-        # SFT uses lower LR
         tc = config.training
         sft_lr = min(tc.peak_lr, 1e-5)
 
@@ -408,7 +341,6 @@ class SFTTrainer:
         self.use_amp = tc.mixed_precision in ("fp16", "bf16") and torch.cuda.is_available()
         self.scaler = torch.amp.GradScaler("cuda", enabled=self.use_amp)
         self.amp_dtype = torch.float16 if tc.mixed_precision == "fp16" else torch.bfloat16
-
         self.global_step = 0
 
     def train(
@@ -419,21 +351,9 @@ class SFTTrainer:
         log_interval: int = 10,
         wandb_run: Optional[Any] = None,
     ) -> dict[str, float]:
-        """Run the SFT training loop.
-
-        Args:
-            max_steps: Maximum training steps.
-            checkpoint_dir: Directory for checkpoints.
-            checkpoint_interval: Checkpoint every N steps.
-            log_interval: Log every N steps.
-            wandb_run: WandB run for logging.
-
-        Returns:
-            Final training metrics.
-        """
+        """Run the SFT training loop."""
         self.model.train()
         running_loss = 0.0
-
         logger.info("Starting SFT training for %d steps", max_steps)
 
         while self.global_step < max_steps:
@@ -482,11 +402,7 @@ class SFTTrainer:
                     )
                     if wandb_run is not None:
                         wandb_run.log(
-                            {
-                                "sft/loss": avg_loss,
-                                "sft/lr": lr,
-                                "sft/step": self.global_step,
-                            }
+                            {"sft/loss": avg_loss, "sft/lr": lr, "sft/step": self.global_step}
                         )
                     running_loss = 0.0
 

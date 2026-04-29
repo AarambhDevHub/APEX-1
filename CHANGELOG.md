@@ -5,7 +5,74 @@ All notable changes to APEX-1 will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [2.0.0] - 2026-01-01
+## [2.1.0] - 2026-04-29
+
+### Fixed
+
+**Critical bugs (BUG-01 through BUG-07)**
+
+- **BUG-01 `attention.py`** — MLA KV cache is now a tuple `(c_kv, K_rope_cache)`. Previously `K_rope_cache` was always re-initialised to zeros, causing all autoregressive steps after the first to attend to garbage positional encodings. The fix stores rotated K_rope values alongside the compressed content latent `c_kv` and concatenates them correctly at each decoding step.
+
+- **BUG-02 `attention.py`** — `W_O` is now initialised with `n_heads_q * d_head` input features (not `n_heads_q * (d_head + d_head_rope)`). The rope component lives only in Q and K; the attention output `weights @ V` has head dimension `d_head`, so the merged input to `W_O` is `n_heads_q * d_head`. The previous initialisation caused a shape-mismatch crash on every forward pass.
+
+- **BUG-03 `constitutional.py`** — `critique_response()` now calls `model.generate()` and parses the YES/NO judgment from the output. Previously it hardcoded `violated=False` for every principle, making Constitutional AI a complete no-op with no safety signal.
+
+- **BUG-04 `grpo.py`** — The generation loop in `grpo_full_loop` now uses `APEX1Generator` instead of a broken manual single-token loop. The old loop passed a single token to the model at each step without a KV cache, reset logits on every iteration, and never produced coherent multi-token responses.
+
+- **BUG-05 `reward_model.py`** — `from typing import Optional` is now at the top of the file. The original placement at the very bottom caused a `NameError` when the `RewardModel.forward()` signature was evaluated.
+
+- **BUG-06 `prm.py`** — `score_steps_from_text` now raises a clear `ValueError` when `tokenizer=None` is passed (as was done in `combined_reward.py`), instead of crashing with `AttributeError: 'NoneType' object has no attribute 'encode'`. A new companion method `score_steps_from_text_pretokenized` is provided for callers that already have token IDs.
+
+- **BUG-07 `apex_model.py`** — RoPE caches are now matched to their layer type. MLA (global) layers receive the `d_head_rope`-wide cache; GQA (local) layers receive the `d_head`-wide cache. Previously the model selected one cache at the model level, causing dimension mismatches for mixed-type stacks.
+
+**Serious bugs (BUG-08 through BUG-13)**
+
+- **BUG-08 `ffn.py`** — MoE expert dispatch now correctly handles batches of `n_e > 1` tokens routed to the same expert. The input is reshaped to `[1, n_e, d_model]` before calling `DenseFFN`, then the batch dim is squeezed away. The previous `unsqueeze(0)/squeeze(0)` pattern only worked when `n_e == 1`; with `n_e > 1` it silently used `n_e` as the sequence dimension, producing wrong gradients and wrong outputs.
+
+- **BUG-09 `generator.py`** — KV-cache position tracking now uses `is_global_layer()` to determine the cache format instead of `isinstance(kv_caches[0], torch.Tensor)`. This is more robust to config changes and correctly handles the updated MLA cache format (which is now a tuple, not a bare tensor — see BUG-01).
+
+- **BUG-10 `mask.py`** — The sliding-window mask is now fully vectorised with `torch.arange` broadcasting. The previous Python `for` loop executed 128 000 iterations per local layer per forward pass at 128 K context, dominating training wall-clock time. The new implementation is a single tensor operation.
+
+- **BUG-11 `trainer.py`** — Each `LoadBalancer` is now created with `n_experts` taken from the actual MoE layer (`moe_ffn.n_experts`) instead of the global `config.moe.n_experts`. If per-layer expert counts differ the old code would silently use the wrong target rate. Also ensured that bias tensors are moved to the correct device via `MoEFFN.set_expert_bias()`.
+
+- **BUG-13 `checkpoint.py`** — The `"python"` RNG state now stores `random.getstate()` (Python `random` module) and `"cpu"` stores `torch.random.get_rng_state()`. Previously both entries stored the same PyTorch tensor state, meaning the Python `random` module state was never saved or restored.
+
+**Minor / code-quality bugs (BUG-19, BUG-21, BUG-22)**
+
+- **BUG-19 `block.py`** — The `is_moe` flag now checks `config.moe.enabled` before evaluating the layer-frequency condition. Previously, blocks in a non-MoE model could be incorrectly labelled as MoE in `extra_repr()` output.
+
+- **BUG-21 `generator.py`** — `thinking_token_count` is no longer incremented for the `<|thinking_start|>` token itself, so the full budget is available for actual thinking content.
+
+- **BUG-22 `rope.py`** — `apply_yarn_scaling` is now fully vectorised using `torch.where` over dimension tensors. The previous Python `for` loop over all head dimensions ran in O(d_head) Python iterations, which was slow for large models.
+
+### Added
+
+- `tests/test_bugfixes.py` — Comprehensive regression test suite with dedicated test classes for each of the 15 fixed bugs (BUG-01 through BUG-22, excluding advisory-only entries).
+
+### Changed
+
+- `apex/model/attention.py` — `MLAAttention.forward()` now accepts and returns `Optional[MLACache]` where `MLACache = tuple[Tensor, Tensor]` (c_kv, K_rope_cache).  Callers that previously passed a bare tensor cache must be updated.
+- `apex/alignment/prm.py` — `score_steps_from_text` now raises `ValueError` on `None` tokenizer instead of crashing silently.
+
+**Post-review fixes and improvements**
+
+- **`shape_checker.py`** — `verify_shapes()` now correctly validates MLA KV caches as tuples `(c_kv, K_rope)` instead of bare tensors. After the BUG-01 cache format change, the `isinstance(kv, torch.Tensor)` check always failed, causing all MLA layer shape checks to report false failures.
+
+- **`test_all.py`** — `test_mla_kv_cache_growth` now accesses the `c_kv` tensor via `kv[0]` to match the updated MLA tuple cache format from BUG-01.
+
+- **`rope.py`** — Reordered `torch.where` operations in `apply_yarn_scaling` so that the high-frequency override (no scaling) is applied last, giving it correct priority over low-frequency scaling.
+
+### Improved
+
+- **`mask.py`** — Removed dead code left over from the BUG-10 vectorisation refactor: an unused `causal = torch.tril(...)` variable and a Python `for` loop that was immediately overwritten by the vectorised broadcast below it.
+
+- **`attention.py`** — Moved `from apex.model.rope import rotate_half` from inside `MLAAttention.forward()` to the module-level imports. The inline import was executing on every forward pass unnecessarily.
+
+- **`load_balancer.py`** — Replaced the Python `for` loop counting per-expert assignments with a single `torch.bincount()` call. Significantly faster with large expert counts (e.g., 256 in APEX-1-Large).
+
+---
+
+## [2.0.0] - 2026-04-26
 
 ### Added
 - Complete APEX-1 architecture implementation (v2.0)

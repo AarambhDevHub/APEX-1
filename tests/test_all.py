@@ -209,10 +209,11 @@ class TestAttention:
         cos, sin = precompute_rope_cache(CFG.model.d_head_rope, 256)
         x1 = torch.randn(1, 4, CFG.model.d_model)
         _, kv1 = mla(x1, cos, sin, torch.arange(4))
-        assert kv1.shape[1] == 4
+        # BUG-01 FIX: kv_cache is now a tuple (c_kv, K_rope), access c_kv
+        assert kv1[0].shape[1] == 4
         x2 = torch.randn(1, 1, CFG.model.d_model)
         _, kv2 = mla(x2, cos, sin, torch.arange(4, 5), kv_cache=kv1)
-        assert kv2.shape[1] == 5
+        assert kv2[0].shape[1] == 5
 
     def test_gqa_output_shape(self):
         gqa = GQASlidingWindowAttention(CFG)

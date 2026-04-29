@@ -8,11 +8,16 @@ Handles saving and restoring complete training state:
 - Training step count
 - Load balancer state
 - RNG states for reproducibility
+
+Fix BUG-13: Both "python" and "cpu" entries previously stored the same
+``torch.random.get_rng_state()`` value.  "python" now correctly stores
+the Python ``random`` module state via ``random.getstate()``.
 """
 
 from __future__ import annotations
 
 import logging
+import random  # BUG-13 FIX: needed for Python RNG state
 from pathlib import Path
 from typing import Any, Optional
 
@@ -64,10 +69,11 @@ def save_checkpoint(
     if load_balancer_state is not None:
         checkpoint["load_balancer_state"] = load_balancer_state
 
-    # Save RNG states for reproducibility
+    # BUG-13 FIX: "python" now stores the Python random module state
+    # (random.getstate()), not a duplicate of the PyTorch CPU RNG state.
     checkpoint["rng_states"] = {
-        "python": torch.random.get_rng_state(),
-        "cpu": torch.random.get_rng_state(),
+        "python": random.getstate(),           # ← Python random module
+        "cpu": torch.random.get_rng_state(),   # ← PyTorch CPU RNG
     }
     if torch.cuda.is_available():
         checkpoint["rng_states"]["cuda"] = torch.cuda.get_rng_state_all()
@@ -129,11 +135,19 @@ def load_checkpoint(
     if scheduler is not None and "scheduler_state_dict" in checkpoint:
         scheduler.load_state_dict(checkpoint["scheduler_state_dict"])
 
-    # Restore RNG states
+    # BUG-13 FIX: Restore Python random state separately from PyTorch CPU state.
     if "rng_states" in checkpoint:
         rng = checkpoint["rng_states"]
+        if "python" in rng:
+            # Handle both old checkpoints (torch Tensor) and new ones (tuple)
+            py_state = rng["python"]
+            if isinstance(py_state, tuple):
+                random.setstate(py_state)
+            # Old checkpoints stored a torch state here — skip silently
         if "cpu" in rng:
-            torch.random.set_rng_state(rng["cpu"])
+            cpu_state = rng["cpu"]
+            if isinstance(cpu_state, torch.Tensor):
+                torch.random.set_rng_state(cpu_state)
         if "cuda" in rng and torch.cuda.is_available():
             torch.cuda.set_rng_state_all(rng["cuda"])
 

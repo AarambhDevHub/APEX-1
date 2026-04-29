@@ -79,9 +79,10 @@ class LoadBalancer:
         n_active = top_k_idx.shape[1]
 
         # Count how many tokens each expert received
-        counts = torch.zeros(self.n_experts, device=top_k_idx.device)
-        for e in range(self.n_experts):
-            counts[e] = (top_k_idx == e).sum().float()
+        counts = torch.bincount(
+            top_k_idx.flatten().to(torch.long),
+            minlength=self.n_experts,
+        ).float().to(top_k_idx.device)
 
         # Normalize to get observed load fraction per expert
         total_assignments = n_tokens * n_active

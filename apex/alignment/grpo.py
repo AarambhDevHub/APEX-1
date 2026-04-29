@@ -1,14 +1,10 @@
 """
 GRPO — Group Relative Policy Optimization for APEX-1.
 
-DeepSeek-R1's key innovation for reasoning training. Eliminates the
-critic/value network by using within-group relative reward as the
-training signal.
-
-For each prompt, sample G responses, rank them using combined reward,
-and use group-normalized advantages with clipped surrogate objective.
-
-Full algorithm from Section 13c of the architecture document.
+Fix BUG-04: The generation loop in ``grpo_full_loop`` previously used a
+broken manual single-token loop that reset logits at each step and never
+built a proper sequence.  It now delegates to ``APEX1Generator`` which
+correctly handles KV caches and produces coherent multi-token responses.
 """
 
 from __future__ import annotations
@@ -26,18 +22,7 @@ logger = logging.getLogger(__name__)
 def extract_thinking_steps(
     response_ids: list[int], thinking_start_id: int, thinking_end_id: int
 ) -> list[list[int]]:
-    """Extract reasoning steps from a response's thinking section.
-
-    Splits the thinking content into steps based on newline tokens.
-
-    Args:
-        response_ids: Full response token IDs.
-        thinking_start_id: Token ID for <|thinking|>.
-        thinking_end_id: Token ID for <|/thinking|>.
-
-    Returns:
-        List of token ID lists, one per reasoning step.
-    """
+    """Extract reasoning steps from a response's thinking section."""
     steps: list[list[int]] = []
     in_thinking = False
     current_step: list[int] = []
@@ -66,16 +51,7 @@ def compute_sequence_log_prob(
     input_ids: torch.Tensor,
     response_start: int,
 ) -> torch.Tensor:
-    """Compute log-probability of response tokens under a model.
-
-    Args:
-        model: Model to compute log-probs with.
-        input_ids: Full token IDs ``[1, seq_len]``.
-        response_start: Index where response begins.
-
-    Returns:
-        Scalar log-probability sum over response tokens.
-    """
+    """Compute log-probability of response tokens under a model."""
     output = model(input_ids)
     logits = output["logits"]
 
@@ -105,10 +81,6 @@ def grpo_training_step(
 ) -> tuple[float, dict[str, float]]:
     """Execute one GRPO training step.
 
-    Takes pre-generated responses and their rewards, computes
-    group-normalized advantages, and updates the policy with
-    the clipped surrogate objective.
-
     Args:
         model: Policy model being trained.
         reference_model: Frozen reference (SFT) model.
@@ -125,14 +97,11 @@ def grpo_training_step(
         Tuple of (loss_value, metrics_dict).
     """
     device = next(model.parameters()).device
-    G = len(response_ids_list)
 
-    # Step 1: Compute group-normalized advantages
     group_mean = rewards.mean()
     group_std = rewards.std().clamp(min=1e-6)
     advantages = (rewards - group_mean) / group_std
 
-    # Step 2: Compute GRPO loss for each response
     all_losses: list[torch.Tensor] = []
     all_kl: list[float] = []
     all_ratios: list[float] = []
@@ -140,37 +109,29 @@ def grpo_training_step(
     for i, response_ids in enumerate(response_ids_list):
         advantage = advantages[i]
 
-        # Build full input (prompt + response)
         if response_ids.dim() == 1:
             response_ids = response_ids.unsqueeze(0)
         full_ids = torch.cat([prompt_ids, response_ids], dim=1).to(device)
 
-        # Log-probability under current policy
         log_pi = compute_sequence_log_prob(model, full_ids, prompt_len)
 
-        # Log-probability under reference policy (frozen)
         with torch.no_grad():
             log_ref = compute_sequence_log_prob(reference_model, full_ids, prompt_len)
 
-        # KL divergence
         kl_div = log_pi - log_ref
         all_kl.append(kl_div.item())
 
-        # Policy ratio
         ratio = torch.exp(log_pi - log_ref.detach())
         all_ratios.append(ratio.item())
 
-        # Clipped surrogate objective
         l_clip = torch.min(
             ratio * advantage,
             torch.clamp(ratio, 1.0 - clip_eps, 1.0 + clip_eps) * advantage,
         )
 
-        # Full loss: maximize reward, penalize KL drift
         loss = -(l_clip - beta * kl_div)
         all_losses.append(loss)
 
-    # Step 3: Backprop and update
     total_loss = torch.stack(all_losses).mean()
     total_loss.backward()
     torch.nn.utils.clip_grad_norm_(model.parameters(), max_grad_norm)
@@ -203,10 +164,10 @@ def grpo_full_loop(
 ) -> dict[str, float]:
     """Full GRPO training loop over a batch of prompts.
 
-    For each prompt:
-    1. Sample G responses from current policy
-    2. Score with reward function
-    3. Run GRPO training step
+    BUG-04 FIX: The generation loop now uses ``APEX1Generator`` instead
+    of the broken manual single-token loop.  The old loop passed a single
+    token to the model without a KV cache, reset logits each iteration,
+    and never actually built a coherent multi-token response.
 
     Args:
         model: Policy model.
@@ -217,11 +178,26 @@ def grpo_full_loop(
         G: Group size (rollouts per prompt).
         beta: KL penalty coefficient.
         clip_eps: Clipping epsilon.
-        generation_config: Config for generation.
+        generation_config: Optional ``GenerationConfig`` for APEX1Generator.
 
     Returns:
         Aggregated metrics across all prompts.
     """
+    # Import here to avoid circular imports at module level
+    from apex.generation.generator import APEX1Generator, GenerationConfig
+
+    device = next(model.parameters()).device
+
+    # Build a generation config for rollouts
+    if generation_config is None:
+        rollout_cfg = GenerationConfig(
+            max_new_tokens=128,
+            temperature=0.7,
+            top_p=0.95,
+        )
+    else:
+        rollout_cfg = generation_config
+
     all_metrics: list[dict[str, float]] = []
 
     for prompt_ids in prompts:
@@ -229,40 +205,33 @@ def grpo_full_loop(
             prompt_ids = prompt_ids.unsqueeze(0)
         prompt_len = prompt_ids.shape[1]
 
-        # Sample G responses
+        # BUG-04 FIX: use APEX1Generator to produce G proper responses.
+        generator = APEX1Generator(model, rollout_cfg)
         response_ids_list: list[torch.Tensor] = []
-        for _ in range(G):
-            # Generate a response (simplified — in production use APEX1Generator)
-            with torch.no_grad():
-                model.eval()
-                output = model(prompt_ids)
-                logits = output["logits"][:, -1, :]
-                # Simple sampling for training rollouts
-                probs = torch.softmax(logits / 0.7, dim=-1)
-                tokens: list[int] = []
-                for _ in range(128):
-                    token = torch.multinomial(probs, 1)
-                    tokens.append(token.item())
-                    out = model(token)
-                    logits = out["logits"][:, -1, :]
-                    probs = torch.softmax(logits / 0.7, dim=-1)
-                model.train()
 
-            response_ids_list.append(torch.tensor([tokens], device=prompt_ids.device))
+        model.eval()
+        with torch.no_grad():
+            for _ in range(G):
+                output = generator.generate(prompt_ids.to(device))
+                resp = torch.tensor(
+                    [output.token_ids], device=device, dtype=torch.long
+                )
+                response_ids_list.append(resp)
+        model.train()
 
         # Score responses
-        rewards: list[float] = []
+        rewards_list: list[float] = []
         for resp_ids in response_ids_list:
             r = reward_fn(prompt_ids, resp_ids)
-            rewards.append(float(r))
-        rewards_tensor = torch.tensor(rewards, device=prompt_ids.device)
+            rewards_list.append(float(r))
+        rewards_tensor = torch.tensor(rewards_list, device=device)
 
         # GRPO step
         loss, metrics = grpo_training_step(
             model,
             reference_model,
             optimizer,
-            prompt_ids,
+            prompt_ids.to(device),
             response_ids_list,
             rewards_tensor,
             prompt_len,
@@ -271,9 +240,8 @@ def grpo_full_loop(
         )
         all_metrics.append(metrics)
 
-    # Aggregate metrics
     if all_metrics:
-        agg = {}
+        agg: dict[str, float] = {}
         for key in all_metrics[0]:
             vals = [m[key] for m in all_metrics]
             agg[key] = sum(vals) / len(vals)

@@ -10,5 +10,5 @@ and built-in reasoning/thinking mode.
 Copyright 2024-2026 Aarambh Dev Hub. Licensed under Apache 2.0.
 """
 
-__version__ = "2.0.0"
+__version__ = "2.1.0"
 __author__ = "Aarambh Dev Hub"

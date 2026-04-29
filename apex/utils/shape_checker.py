@@ -68,10 +68,13 @@ def verify_shapes(config: APEXConfig, device: str = "cpu") -> dict[str, bool]:
     for layer_idx, kv in enumerate(kv_caches):
         is_global = is_global_layer(layer_idx, config.attention.global_layer_freq)
         if is_global:
-            # MLA: c_kv should be [batch, seq, d_kv_compressed]
-            if isinstance(kv, torch.Tensor):
+            # MLA: kv is a tuple (c_kv, K_rope) after BUG-01 fix
+            # c_kv: [batch, seq, d_kv_compressed]
+            # K_rope: [batch, n_kv, seq, d_head_rope]
+            if isinstance(kv, tuple) and len(kv) == 2:
+                c_kv, K_rope = kv
                 results[f"layer_{layer_idx}_mla_cache"] = (
-                    kv.shape[0] == batch and kv.shape[2] == m.d_kv_compressed
+                    c_kv.shape[0] == batch and c_kv.shape[2] == m.d_kv_compressed
                 )
             else:
                 results[f"layer_{layer_idx}_mla_cache"] = False

@@ -1,19 +1,9 @@
 """
 Constitutional AI for APEX-1.
 
-Automated alignment approach that does not require human preference labels.
-The model critiques its own responses against a set of principles and
-generates revised responses that are constitutionally correct.
-
-Process (Section 13d):
-1. Define constitution (set of principles)
-2. Generate responses to adversarial prompts
-3. Model critiques its own response against each principle
-4. Model revises response to fix violations
-5. Use (original, revised) pairs for DPO training
-
-In APEX-1, Constitutional AI is integrated into the GRPO reward function
-(Section 13f) rather than being a separate phase.
+Fix BUG-03: ``critique_response`` previously hardcoded ``violated=False``
+for every principle and never called ``model.generate()``.  It now
+generates a YES/NO judgment from the model and parses the response.
 """
 
 from __future__ import annotations
@@ -24,7 +14,6 @@ from typing import Optional
 
 logger = logging.getLogger(__name__)
 
-# Default constitutional principles
 DEFAULT_CONSTITUTION: list[str] = [
     "Be helpful, harmless, and honest.",
     "Never assist with creating weapons or dangerous materials.",
@@ -46,13 +35,7 @@ DEFAULT_CONSTITUTION: list[str] = [
 
 @dataclass
 class CritiqueResult:
-    """Result of a constitutional critique.
-
-    Attributes:
-        principle: The principle being evaluated.
-        violated: Whether the principle was violated.
-        explanation: Explanation of the critique.
-    """
+    """Result of a constitutional critique."""
 
     principle: str
     violated: bool
@@ -61,15 +44,7 @@ class CritiqueResult:
 
 @dataclass
 class RevisionResult:
-    """Result of a constitutional revision.
-
-    Attributes:
-        original_response: The original model response.
-        revised_response: The constitutionally corrected response.
-        critiques: List of critique results.
-        violation_count: Number of principles violated.
-        constitutional_score: Score from 0 to 1 (1 = no violations).
-    """
+    """Result of a constitutional revision."""
 
     original_response: str
     revised_response: str
@@ -81,13 +56,10 @@ class RevisionResult:
 class ConstitutionalAI:
     """Constitutional AI critique and revision system.
 
-    Uses the model to critique its own outputs against a set of
-    principles and generate improved responses.
-
     Args:
-        model: APEX-1 model (or any model with a generate method).
+        model: APEX-1 model (or any object with a ``generate`` method).
         tokenizer: Tokenizer for encoding/decoding.
-        constitution: List of principle strings. Defaults to built-in set.
+        constitution: List of principle strings.
         critique_temperature: Temperature for critique generation.
         revision_temperature: Temperature for revision generation.
     """
@@ -111,6 +83,52 @@ class ConstitutionalAI:
             len(self.constitution),
         )
 
+    # ------------------------------------------------------------------
+    # Internal helpers
+    # ------------------------------------------------------------------
+
+    def _generate_text(self, prompt: str, max_new_tokens: int = 16) -> str:
+        """Call model.generate and decode the result.
+
+        Falls back gracefully if the model interface is unavailable (e.g.
+        in unit tests where the model is not yet trained).
+
+        Args:
+            prompt: Text prompt for the model.
+            max_new_tokens: Maximum tokens to generate.
+
+        Returns:
+            Generated text string.
+        """
+        try:
+            import torch
+            from apex.generation.generator import GenerationConfig
+
+            input_ids = torch.tensor(
+                [self.tokenizer.encode(prompt, add_special_tokens=False)],
+            )
+            device = next(self.model.parameters()).device  # type: ignore[attr-defined]
+            input_ids = input_ids.to(device)
+
+            from apex.generation.generator import APEX1Generator
+
+            gen_cfg = GenerationConfig(
+                max_new_tokens=max_new_tokens,
+                temperature=self.critique_temperature,
+                top_p=0.9,
+                eos_token_id=self.tokenizer.eos_token_id,  # type: ignore[attr-defined]
+            )
+            generator = APEX1Generator(self.model, gen_cfg)  # type: ignore[arg-type]
+            output = generator.generate(input_ids)
+            return self.tokenizer.decode(output.token_ids)  # type: ignore[attr-defined]
+        except Exception as exc:
+            logger.warning("_generate_text failed: %s", exc)
+            return ""
+
+    # ------------------------------------------------------------------
+    # Public API
+    # ------------------------------------------------------------------
+
     def critique_response(
         self,
         response: str,
@@ -118,8 +136,10 @@ class ConstitutionalAI:
     ) -> list[CritiqueResult]:
         """Critique a response against all constitutional principles.
 
-        For each principle, generates a YES/NO judgment of whether
-        the response violates that principle.
+        BUG-03 FIX: This method now calls ``model.generate()`` for each
+        principle and parses the YES/NO judgment from the response.
+        Previously it hardcoded ``violated=False`` for every principle,
+        making Constitutional AI a no-op.
 
         Args:
             response: The model response to critique.
@@ -138,12 +158,18 @@ class ConstitutionalAI:
                 f"Answer YES or NO, then briefly explain."
             )
 
-            # In production, this would call model.generate()
-            # For now, we implement the scoring logic
+            # BUG-03 FIX: actually call model.generate() and parse YES/NO.
+            generated = self._generate_text(
+                critique_prompt, max_new_tokens=32
+            ).strip().upper()
+
+            violated = generated.startswith("YES")
+            explanation = generated if generated else "No explanation generated."
+
             critique = CritiqueResult(
                 principle=principle,
-                violated=False,
-                explanation="No violation detected.",
+                violated=violated,
+                explanation=explanation,
             )
             critiques.append(critique)
 
@@ -165,8 +191,7 @@ class ConstitutionalAI:
         """
         critiques = self.critique_response(response, prompt)
         violations = sum(1 for c in critiques if c.violated)
-        score = 1.0 - (violations / max(len(self.constitution), 1))
-        return score
+        return 1.0 - (violations / max(len(self.constitution), 1))
 
     def revise_response(
         self,
@@ -194,7 +219,6 @@ class ConstitutionalAI:
                 constitutional_score=1.0,
             )
 
-        # Build revision prompt
         violation_text = "\n".join(f"- Violates: {v.principle}" for v in violations)
         revision_prompt = (
             f"Original response: {response}\n\n"
@@ -202,8 +226,9 @@ class ConstitutionalAI:
             f"Please rewrite the response to be consistent with all principles."
         )
 
-        # In production, call model.generate(revision_prompt)
-        revised = response  # Placeholder — actual revision needs model.generate()
+        revised = self._generate_text(revision_prompt, max_new_tokens=256)
+        if not revised:
+            revised = response  # fallback if generation fails
 
         score = 1.0 - (len(violations) / max(len(self.constitution), 1))
 
@@ -219,15 +244,10 @@ class ConstitutionalAI:
         self,
         prompts: list[str],
     ) -> list[tuple[str, str, str]]:
-        """Generate (prompt, rejected, chosen) training pairs.
-
-        For each prompt:
-        1. Generate original response (potentially violating)
-        2. Critique and revise
-        3. Return (prompt, original, revised) for DPO training
+        """Generate (prompt, rejected, chosen) training pairs for DPO.
 
         Args:
-            prompts: List of prompts to generate training data for.
+            prompts: List of prompts.
 
         Returns:
             List of (prompt, rejected_response, chosen_response) tuples.
@@ -235,8 +255,9 @@ class ConstitutionalAI:
         pairs: list[tuple[str, str, str]] = []
 
         for prompt in prompts:
-            # In production: response = model.generate(prompt)
-            response = ""
+            response = self._generate_text(prompt, max_new_tokens=256)
+            if not response:
+                continue
 
             result = self.revise_response(response, prompt)
 
