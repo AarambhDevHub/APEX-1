@@ -66,11 +66,11 @@ $$\sin\_\text{cache}[pos] = [\sin\phi_{pos,0},\sin\phi_{pos,0}, \sin\phi_{pos,1}
 
 Given a query vector $\mathbf{q}$, we apply the rotation:
 
-$$\mathbf{q}_{\text{rot}} = \mathbf{q} \odot \cos + \operatorname{rotate\_half}(\mathbf{q}) \odot \sin$$
+$$\mathbf{q}_{\text{rot}} = \mathbf{q} \odot \cos\theta + R(\mathbf{q}) \odot \sin\theta$$
 
-where $\odot$ is element-wise multiplication, and `rotate_half` rearranges pairs:
+where $\odot$ is element-wise multiplication, and $R(\cdot)$ (the `rotate_half` function) rearranges pairs:
 
-$$\operatorname{rotate\_half}([x_0, x_1, x_2, x_3, \ldots]) = [-x_1, x_0, -x_3, x_2, \ldots]$$
+$$R([x_0, x_1, x_2, x_3, \ldots]) = [-x_1, x_0, -x_3, x_2, \ldots]$$
 
 This is a **2D rotation** applied independently to each pair of dimensions:
 
@@ -107,7 +107,7 @@ $$t = \frac{\lambda_i/\beta_{\text{slow}} - 1}{s - 1}$$
 
 YaRN also adjusts the attention scale to prevent entropy collapse:
 
-$$\textit{attn\_factor} = 0.1 \times \ln(s) + 1.0$$
+$$\gamma = 0.1 \times \ln(s) + 1.0$$
 
 ---
 
