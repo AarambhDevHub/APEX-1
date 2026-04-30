@@ -21,7 +21,7 @@ This is complex, unstable, and computationally expensive.
 
 Rafailov et al. (2023) showed that the RLHF objective has a closed-form solution. The optimal policy implicitly defines a reward:
 
-$$r^*(x, y) = \beta \log\frac{\pi^*(y|x)}{\pi_{ref}(y|x)} + \beta \log Z(x)$$
+$$r^{\ast}(x, y) = \beta \log\frac{\pi^{\ast}(y|x)}{\pi_{ref}(y|x)} + \beta \log Z(x)$$
 
 where $Z(x)$ is a partition function that cancels out when comparing two responses.
 
@@ -50,7 +50,7 @@ $$L_{DPO} = -\mathbb{E}\!\left[\log\sigma\!\left(\beta\!\left(\log\frac{\pi(y_c|
 
 ## 4. Computing Sequence Log-Probability
 
-$$\log P(y|x) = \sum_{t=1}^{T} \log P(y_t | x, y_{<t})$$
+$$\log P(y|x) = \sum_{t=1}^{T} \log P(y_t | x, y_{< t})$$
 
 This sums the log-probability of each response token given all previous tokens:
 
