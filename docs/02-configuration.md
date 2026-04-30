@@ -59,7 +59,9 @@ class ModelConfig:
 
 The most important constraint is:
 
-$$d_{\text{model}} = n_{\text{heads\_q}} \times d_{\text{head}}$$
+$$d_{\text{model}} = N_{Q} \times d_{\text{head}}$$
+
+where $N_Q$ = `n_heads_q` (number of query heads) and $d_{\text{head}}$ = `d_head`.
 
 **Why?** The model's hidden dimension must equal the total size of all query heads put together. For Small: $8 \times 64 = 512$. For Large: $128 \times 64 = 8192$.
 

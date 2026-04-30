@@ -53,7 +53,7 @@ When you call `embedding(token_ids)`:
 
 APEX-1 multiplies the embedding by $\sqrt{d_{\text{model}}}$:
 
-$$\mathbf{x} = \text{Embedding}(\text{token\_ids}) \times \sqrt{d_{\text{model}}}$$
+$$\mathbf{x} = \text{Embedding}(\texttt{token\_ids}) \times \sqrt{d_{\text{model}}}$$
 
 **Why?** Without scaling, the embedding values are tiny (initialised with standard deviation ~0.02). As $d_{\text{model}}$ grows, the values stay small and get overwhelmed by the other components (like positional encoding). Multiplying by $\sqrt{d_{\text{model}}}$ keeps the scale stable across different model sizes.
 
@@ -236,7 +236,7 @@ class APEX1Model(nn.Module):
 
 | Concept | Formula | Purpose |
 |---|---|---|
-| Embedding lookup | $\mathbf{x} = \mathbf{W}_e[\text{token\_id}]$ | Token ID → vector |
+| Embedding lookup | $\mathbf{x} = \mathbf{W}_e[\texttt{token\_id}]$ | Token ID → vector |
 | Embedding scale | $\mathbf{x} = \mathbf{x} \times \sqrt{d_{\text{model}}}$ | Stable magnitudes |
 | Weight tying | $\text{logits} = \mathbf{x} \mathbf{W}_e^T$ | Reuse embedding as LM head |
 | RMSNorm | $\text{RMS}(\mathbf{x}) = \sqrt{\frac{1}{d}\sum x_i^2 + \varepsilon}$, then $\mathbf{x}/\text{RMS} \times \gamma$ | Stable signal magnitude |

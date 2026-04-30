@@ -62,7 +62,7 @@ Dividing by `gradient_accumulation_steps` ensures the effective loss scale is th
 
 Sometimes a bad batch produces very large gradients that would cause an enormous weight update, destabilising training. **Gradient clipping** scales down the gradient vector if its norm exceeds a threshold:
 
-$$g \leftarrow g \times \frac{\text{clip\_norm}}{\max(\|g\|, \text{clip\_norm})}$$
+$$g \leftarrow g \times \frac{c}{\max(\|g\|,\, c)}, \quad c = \text{clip norm}$$
 
 For APEX-1: `grad_clip = 1.0`. If the gradient norm > 1.0, it is rescaled to exactly 1.0.
 

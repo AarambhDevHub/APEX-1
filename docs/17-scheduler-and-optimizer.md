@@ -70,13 +70,13 @@ Early in training, the model's parameters are random. With a high learning rate,
 
 **Warmup:** Slowly increase $\alpha$ from 0 to $\alpha_{peak}$ over the first `warmup_steps` steps:
 
-$$\alpha_t = \alpha_{peak} \times \frac{t}{\text{warmup\_steps}}, \quad t \leq \text{warmup\_steps}$$
+$$\alpha_t = \alpha_{\text{peak}} \times \frac{t}{t_{\text{warmup}}}, \quad t \leq t_{\text{warmup}}$$
 
 ### Why Cosine Decay?
 
 After warmup, the model is in a good region. Now we want to make progressively finer adjustments. Cosine decay smoothly reduces the learning rate:
 
-$$\alpha_t = \alpha_{min} + \frac{1}{2}(\alpha_{peak} - \alpha_{min})\left(1 + \cos\!\left(\pi \cdot \frac{t - \text{warmup}}{\text{max\_steps} - \text{warmup}}\right)\right)$$
+$$\alpha_t = \alpha_{\min} + \frac{1}{2}(\alpha_{\text{peak}} - \alpha_{\min})\left(1 + \cos\!\left(\pi \cdot \frac{t - t_{\text{warmup}}}{T_{\max} - t_{\text{warmup}}}\right)\right)$$
 
 This curves from $\alpha_{peak}$ at the start of decay to $\alpha_{min}$ at the end. The cosine shape decays slowly at first (when the model is learning large patterns) and slowly at the end (when fine-tuning small details).
 
