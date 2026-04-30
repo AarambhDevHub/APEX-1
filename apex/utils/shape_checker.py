@@ -4,12 +4,18 @@ Shape Verification for APEX-1.
 Verifies that every tensor shape in the model matches the specifications
 from Section 16 of the architecture document. Runs a forward pass with
 known dimensions and checks all intermediate shapes.
+
+Fix BUG-23: ``verify_shapes`` now accepts an optional ``model`` parameter
+and uses it instead of always creating a new ``APEX1Model`` internally.
+Previously the function instantiated a fresh model from the config,
+ignoring any pre-built model the caller wanted to validate — meaning it
+always tested a randomly-initialised model rather than the actual one.
 """
 
 from __future__ import annotations
 
 import logging
-from typing import Any
+from typing import Optional
 
 import torch
 
@@ -19,15 +25,21 @@ from apex.model.apex_model import APEX1Model
 logger = logging.getLogger(__name__)
 
 
-def verify_shapes(config: APEXConfig, device: str = "cpu") -> dict[str, bool]:
+def verify_shapes(
+    config: APEXConfig,
+    device: str = "cpu",
+    model: Optional[APEX1Model] = None,
+) -> dict[str, bool]:
     """Verify all tensor shapes in the model match architecture spec.
 
-    Creates a model, runs a forward pass with known inputs, and checks
-    that output shapes are correct.
+    Runs a forward pass with known inputs and checks that output shapes
+    are correct.
 
     Args:
         config: APEXConfig to test.
         device: Device to run on.
+        model: Optional pre-built APEX1Model to verify.  If None, a new
+               model is created from the config (original behaviour).
 
     Returns:
         Dict mapping check names to pass/fail booleans.
@@ -37,8 +49,11 @@ def verify_shapes(config: APEXConfig, device: str = "cpu") -> dict[str, bool]:
 
     logger.info("Verifying shapes for d_model=%d, n_layers=%d", m.d_model, m.n_layers)
 
-    # Create model
-    model = APEX1Model(config).to(device)
+    # BUG-23 FIX: use the passed model if provided, otherwise create a new one.
+    if model is None:
+        model = APEX1Model(config).to(device)
+    else:
+        model = model.to(device)
     model.eval()
 
     batch = 2

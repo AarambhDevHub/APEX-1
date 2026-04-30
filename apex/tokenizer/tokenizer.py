@@ -9,6 +9,13 @@ Features:
 - Encode/decode with proper handling of special tokens
 - Train from raw text capability
 
+Fix BUG-14: ``get_token_types()`` now explicitly maps ``<|thinking|>``
+and ``<|/thinking|>`` tokens to type 2 (assistant).  Previously these
+tokens inherited the current type, which would be wrong if a thinking
+block appeared without a preceding ``<|assistant|>`` token — the
+thinking content would be labelled as system/user and excluded from
+the SFT loss.
+
 Special Tokens:
     <|begin_of_text|>  — Start of every sequence
     <|end_of_text|>    — End of generation
@@ -23,10 +30,9 @@ Special Tokens:
 
 from __future__ import annotations
 
-import json
 import logging
 from pathlib import Path
-from typing import Optional, Union
+from typing import Optional
 
 logger = logging.getLogger(__name__)
 
@@ -80,8 +86,7 @@ class APEX1Tokenizer:
 
     def _setup_minimal_tokenizer(self) -> None:
         """Set up a minimal tokenizer with byte-level fallback for testing."""
-        from tokenizers import pre_tokenizers, processors
-        from tokenizers.models import BPE
+        from tokenizers import pre_tokenizers
 
         # Use byte-level pre-tokenizer
         self._tokenizer.pre_tokenizer = pre_tokenizers.ByteLevel(add_prefix_space=False)
@@ -274,7 +279,7 @@ class APEX1Tokenizer:
             ...     {"role": "system", "content": "You are a helpful AI."},
             ...     {"role": "user", "content": "What is 2+2?"},
             ... ])
-            '<|begin_of_text|><|system|>\\nYou are a helpful AI.\\n<|user|>\\nWhat is 2+2?\\n<|assistant|>\\n'
+            '<|begin_of_text|><|system|>\\nYou are a...<|assistant|>\\n'
         """
         parts = [SPECIAL_TOKENS["bos"]]
 
@@ -333,6 +338,11 @@ class APEX1Tokenizer:
         - 1: user tokens
         - 2: assistant tokens (including thinking)
 
+        BUG-14 FIX: ``<|thinking|>`` and ``<|/thinking|>`` tokens now
+        explicitly set the current type to 2 (assistant).  This ensures
+        thinking content is always included in the SFT loss even if the
+        thinking block appears without a preceding ``<|assistant|>`` token.
+
         Args:
             token_ids: List of token IDs from encode_chat.
 
@@ -348,6 +358,9 @@ class APEX1Tokenizer:
             elif tid == self.user_token_id:
                 current_type = 1
             elif tid == self.assistant_token_id:
+                current_type = 2
+            # BUG-14 FIX: thinking tokens are always assistant content
+            elif tid == self.thinking_start_id or tid == self.thinking_end_id:
                 current_type = 2
 
             types.append(current_type)

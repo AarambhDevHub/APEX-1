@@ -3,6 +3,13 @@ APEX-1 Training CLI.
 
 Launch pretraining or SFT from the command line with a config file.
 
+Fix BUG-20: The log file is now written to the checkpoint directory
+(``<checkpoint_dir>/training.log``) instead of unconditionally to CWD.
+The previous ``FileHandler("training.log")`` would fail with permission
+errors in read-only environments or pollute unrelated directories.
+The file handler is added lazily after arguments are parsed, with a
+graceful fallback if the path is not writable.
+
 Usage:
     python scripts/train.py --config configs/apex1_tiny.yaml --mode pretrain
     python scripts/train.py --config configs/apex1_small.yaml --mode sft --checkpoint checkpoints/pretrained.pt
@@ -25,10 +32,12 @@ from apex.training.checkpoint import load_checkpoint
 from apex.training.trainer import PreTrainer, SFTTrainer
 from apex.utils.param_counter import print_parameter_summary
 
+# BUG-20 FIX: set up console logging only at module level.
+# The file handler is added later in main() once we know checkpoint_dir.
 logging.basicConfig(
     level=logging.INFO,
     format="%(asctime)s [%(levelname)s] %(name)s: %(message)s",
-    handlers=[logging.StreamHandler(), logging.FileHandler("training.log")],
+    handlers=[logging.StreamHandler()],
 )
 logger = logging.getLogger(__name__)
 
@@ -49,6 +58,18 @@ def main():
     parser.add_argument("--wandb", action="store_true", help="Enable WandB logging")
     parser.add_argument("--dry-run", action="store_true", help="Quick test with dummy data")
     args = parser.parse_args()
+
+    # BUG-20 FIX: set up log file handler now that we know checkpoint_dir.
+    log_dir = Path(args.checkpoint_dir)
+    try:
+        log_dir.mkdir(parents=True, exist_ok=True)
+        file_handler = logging.FileHandler(log_dir / "training.log")
+        file_handler.setFormatter(
+            logging.Formatter("%(asctime)s [%(levelname)s] %(name)s: %(message)s")
+        )
+        logging.getLogger().addHandler(file_handler)
+    except OSError as exc:
+        logger.warning("Could not create log file in %s: %s", log_dir, exc)
 
     # Load config
     config = APEXConfig.from_yaml(args.config)

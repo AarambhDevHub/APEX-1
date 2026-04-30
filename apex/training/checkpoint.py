@@ -72,8 +72,8 @@ def save_checkpoint(
     # BUG-13 FIX: "python" now stores the Python random module state
     # (random.getstate()), not a duplicate of the PyTorch CPU RNG state.
     checkpoint["rng_states"] = {
-        "python": random.getstate(),           # ← Python random module
-        "cpu": torch.random.get_rng_state(),   # ← PyTorch CPU RNG
+        "python": random.getstate(),  # ← Python random module
+        "cpu": torch.random.get_rng_state(),  # ← PyTorch CPU RNG
     }
     if torch.cuda.is_available():
         checkpoint["rng_states"]["cuda"] = torch.cuda.get_rng_state_all()

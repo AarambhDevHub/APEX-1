@@ -111,9 +111,7 @@ class MLAAttention(nn.Module):
         # BUG-01 FIX: compute K_rope for the current input tokens and store
         # alongside c_kv.  Previous steps' K_rope is retrieved from cache.
         K_rope_new = (
-            self.W_KR(x)
-            .view(batch, seq_len, self.n_heads_kv, self.d_head_rope)
-            .transpose(1, 2)
+            self.W_KR(x).view(batch, seq_len, self.n_heads_kv, self.d_head_rope).transpose(1, 2)
         )  # [batch, n_heads_kv, seq, d_head_rope]
 
         # Rotate K_rope for the current positions
@@ -137,30 +135,20 @@ class MLAAttention(nn.Module):
 
         # ── Step 4: Reconstruct K and V from latent ───────────────────────
         K_content = (
-            self.W_UK(c_kv_full)
-            .view(batch, full_seq, self.n_heads_kv, self.d_head)
-            .transpose(1, 2)
+            self.W_UK(c_kv_full).view(batch, full_seq, self.n_heads_kv, self.d_head).transpose(1, 2)
         )  # [batch, n_heads_kv, full_seq, d_head]
         V = (
-            self.W_UV(c_kv_full)
-            .view(batch, full_seq, self.n_heads_kv, self.d_head)
-            .transpose(1, 2)
+            self.W_UV(c_kv_full).view(batch, full_seq, self.n_heads_kv, self.d_head).transpose(1, 2)
         )  # [batch, n_heads_kv, full_seq, d_head]
 
         # ── Step 5: Reconstruct Q ────────────────────────────────────────
         c_q = self.W_DQ(x)
         Q_content = (
-            self.W_UQ(c_q)
-            .view(batch, seq_len, self.n_heads_q, self.d_head)
-            .transpose(1, 2)
+            self.W_UQ(c_q).view(batch, seq_len, self.n_heads_q, self.d_head).transpose(1, 2)
         )  # [batch, n_heads_q, seq, d_head]
 
         # ── Step 6: Decoupled RoPE queries for current tokens ────────────
-        Q_rope = (
-            self.W_QR(x)
-            .view(batch, seq_len, self.n_heads_q, self.d_head_rope)
-            .transpose(1, 2)
-        )
+        Q_rope = self.W_QR(x).view(batch, seq_len, self.n_heads_q, self.d_head_rope).transpose(1, 2)
         cos_q = cos_cache[positions].unsqueeze(0).unsqueeze(0)[..., : self.d_head_rope]
         sin_q = sin_cache[positions].unsqueeze(0).unsqueeze(0)[..., : self.d_head_rope]
         Q_rope = Q_rope * cos_q + rotate_half(Q_rope) * sin_q
@@ -180,7 +168,7 @@ class MLAAttention(nn.Module):
         if self.use_flash and x.is_cuda:
             if attn_mask is not None:
                 if attn_mask.dim() == 2:
-                    bool_mask = attn_mask[: seq_len, : full_seq]
+                    bool_mask = attn_mask[:seq_len, :full_seq]
                     float_mask = torch.zeros(
                         seq_len, full_seq, device=x.device, dtype=x.dtype
                     ).masked_fill(~bool_mask, float("-inf"))
@@ -201,13 +189,9 @@ class MLAAttention(nn.Module):
             if attn_mask is not None:
                 if attn_mask.dim() == 2:
                     m_slice = attn_mask[:seq_len, :full_seq]
-                    scores = scores.masked_fill(
-                        ~m_slice.unsqueeze(0).unsqueeze(0), float("-inf")
-                    )
+                    scores = scores.masked_fill(~m_slice.unsqueeze(0).unsqueeze(0), float("-inf"))
                 else:
-                    scores = scores.masked_fill(
-                        ~attn_mask[..., :seq_len, :full_seq], float("-inf")
-                    )
+                    scores = scores.masked_fill(~attn_mask[..., :seq_len, :full_seq], float("-inf"))
 
             weights = torch.softmax(scores, dim=-1)
             attn_out = torch.matmul(weights, V)  # [batch, n_heads_q, seq, d_head]
@@ -316,13 +300,9 @@ class GQASlidingWindowAttention(nn.Module):
             if attn_mask is not None:
                 if attn_mask.dim() == 2:
                     mask_2d = attn_mask[:seq_len, :kv_len]
-                    scores = scores.masked_fill(
-                        ~mask_2d.unsqueeze(0).unsqueeze(0), float("-inf")
-                    )
+                    scores = scores.masked_fill(~mask_2d.unsqueeze(0).unsqueeze(0), float("-inf"))
                 else:
-                    scores = scores.masked_fill(
-                        ~attn_mask[..., :seq_len, :kv_len], float("-inf")
-                    )
+                    scores = scores.masked_fill(~attn_mask[..., :seq_len, :kv_len], float("-inf"))
             else:
                 sw_mask = torch.zeros(seq_len, kv_len, dtype=torch.bool, device=x.device)
                 for i in range(seq_len):

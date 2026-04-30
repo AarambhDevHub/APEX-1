@@ -21,7 +21,6 @@ from typing import Optional
 
 import torch
 import torch.nn as nn
-import torch.nn.functional as F
 
 logger = logging.getLogger(__name__)
 
@@ -121,22 +120,21 @@ class MoEFFN(nn.Module):
                 continue
 
             tokens_for_expert = x_flat[token_mask]  # [n_e, d_model]
-            n_e = tokens_for_expert.shape[0]
 
             # BUG-08 FIX: Reshape to [1, n_e, d_model] so DenseFFN processes
             # all n_e tokens as a sequence (not as a batch), then squeeze
             # the batch dim back.  This is correct for any n_e >= 1.
             expert_output = self.routed_experts[e_idx](
                 tokens_for_expert.unsqueeze(0)  # [1, n_e, d_model]
-            ).squeeze(0)  # [n_e, d_model]
+            ).squeeze(
+                0
+            )  # [n_e, d_model]
 
             # Gather routing weight for this expert per token
-            expert_positions = (top_k_idx[token_mask] == e_idx)  # [n_e, n_active]
+            expert_positions = top_k_idx[token_mask] == e_idx  # [n_e, n_active]
             e_position = expert_positions.float().argmax(dim=-1)  # [n_e]
             weights = (
-                routing_weights[token_mask]
-                .gather(1, e_position.unsqueeze(1).long())
-                .squeeze(1)
+                routing_weights[token_mask].gather(1, e_position.unsqueeze(1).long()).squeeze(1)
             )  # [n_e]
 
             routed_out[token_mask] += expert_output * weights.unsqueeze(-1)

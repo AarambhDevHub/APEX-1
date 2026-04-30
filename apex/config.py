@@ -10,10 +10,9 @@ hyperparameters, and GRPO alignment settings.
 from __future__ import annotations
 
 import logging
-import math
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Any, Optional
+from typing import Any
 
 import yaml
 
@@ -237,13 +236,14 @@ class APEXConfig:
                 f"global_layer_freq ({a.global_layer_freq}) for clean layer assignment"
             )
 
+        # BUG-18 FIX: raise ValueError instead of warning.  A d_model
+        # mismatch causes a hard shape error in the attention output
+        # projection (W_O), so it must be caught before model construction.
         if m.d_model != m.n_heads_q * m.d_head:
-            logger.warning(
-                "d_model (%d) != n_heads_q (%d) * d_head (%d). "
-                "Output projection will handle dimension mismatch.",
-                m.d_model,
-                m.n_heads_q,
-                m.d_head,
+            raise ValueError(
+                f"d_model ({m.d_model}) must equal n_heads_q ({m.n_heads_q}) * "
+                f"d_head ({m.d_head}) = {m.n_heads_q * m.d_head}. "
+                f"Mismatched dimensions will crash the attention output projection."
             )
 
         if self.moe.enabled and self.moe.n_active > self.moe.n_experts:

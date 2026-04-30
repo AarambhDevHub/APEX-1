@@ -14,7 +14,6 @@ Peak LR by model size:
 from __future__ import annotations
 
 import math
-from typing import Optional
 
 import torch
 from torch.optim.lr_scheduler import LambdaLR

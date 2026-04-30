@@ -213,9 +213,7 @@ def grpo_full_loop(
         with torch.no_grad():
             for _ in range(G):
                 output = generator.generate(prompt_ids.to(device))
-                resp = torch.tensor(
-                    [output.token_ids], device=device, dtype=torch.long
-                )
+                resp = torch.tensor([output.token_ids], device=device, dtype=torch.long)
                 response_ids_list.append(resp)
         model.train()
 

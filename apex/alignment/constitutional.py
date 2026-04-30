@@ -102,6 +102,7 @@ class ConstitutionalAI:
         """
         try:
             import torch
+
             from apex.generation.generator import GenerationConfig
 
             input_ids = torch.tensor(
@@ -159,9 +160,7 @@ class ConstitutionalAI:
             )
 
             # BUG-03 FIX: actually call model.generate() and parse YES/NO.
-            generated = self._generate_text(
-                critique_prompt, max_new_tokens=32
-            ).strip().upper()
+            generated = self._generate_text(critique_prompt, max_new_tokens=32).strip().upper()
 
             violated = generated.startswith("YES")
             explanation = generated if generated else "No explanation generated."

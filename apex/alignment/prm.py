@@ -133,7 +133,9 @@ class ProcessRewardModel(nn.Module):
 
         step_ids_list = []
         for step in steps:
-            ids = tokenizer.encode("\n" + step, add_special_tokens=False)  # type: ignore[attr-defined]
+            ids = tokenizer.encode(  # type: ignore[attr-defined]
+                "\n" + step, add_special_tokens=False
+            )
             step_ids_list.append(torch.tensor(ids, device=device))
 
         return self.score_steps(prompt_ids, step_ids_list)
@@ -161,6 +163,8 @@ class ProcessRewardModel(nn.Module):
         device = next(self.parameters()).device
         step_ids_list = []
         for step in step_texts:
-            ids = tokenizer.encode("\n" + step, add_special_tokens=False)  # type: ignore[attr-defined]
+            ids = tokenizer.encode(  # type: ignore[attr-defined]
+                "\n" + step, add_special_tokens=False
+            )
             step_ids_list.append(torch.tensor(ids, device=device))
         return self.score_steps(prompt_ids.to(device), step_ids_list)

@@ -9,6 +9,12 @@ Loss (Section 13b):
     reward_chosen   = β × (log π(chosen|prompt) - log π_ref(chosen|prompt))
     reward_rejected = β × (log π(rejected|prompt) - log π_ref(rejected|prompt))
     loss = -log(sigmoid(reward_chosen - reward_rejected))
+
+Fix BUG-16: ``dpo_loss`` now passes ``prefix_len=prompt_len`` to the
+model so that prompt tokens receive bidirectional attention (GLM-4
+style) instead of causal-only.  Previously ``prefix_len`` defaulted to
+0, meaning the prompt was treated causally, producing a weaker
+contextual representation that degrades DPO training quality.
 """
 
 from __future__ import annotations
@@ -73,17 +79,22 @@ def dpo_loss(
     Returns:
         Tuple of (loss, metrics_dict).
     """
+    # BUG-16 FIX: pass prefix_len=prompt_len so that the prompt tokens
+    # receive bidirectional attention (GLM-4 style) instead of the default
+    # causal-only attention.  This gives a richer contextual encoding of
+    # the prompt for both policy and reference models.
+
     # Log-probabilities from policy (model being trained)
-    chosen_logits = model(chosen_ids)["logits"]
-    rejected_logits = model(rejected_ids)["logits"]
+    chosen_logits = model(chosen_ids, prefix_len=prompt_len)["logits"]
+    rejected_logits = model(rejected_ids, prefix_len=prompt_len)["logits"]
 
     log_pi_chosen = compute_sequence_logprob(chosen_logits, chosen_ids, prompt_len)
     log_pi_rejected = compute_sequence_logprob(rejected_logits, rejected_ids, prompt_len)
 
     # Log-probabilities from reference (frozen SFT model)
     with torch.no_grad():
-        ref_chosen_logits = reference_model(chosen_ids)["logits"]
-        ref_rejected_logits = reference_model(rejected_ids)["logits"]
+        ref_chosen_logits = reference_model(chosen_ids, prefix_len=prompt_len)["logits"]
+        ref_rejected_logits = reference_model(rejected_ids, prefix_len=prompt_len)["logits"]
 
         log_ref_chosen = compute_sequence_logprob(ref_chosen_logits, chosen_ids, prompt_len)
         log_ref_rejected = compute_sequence_logprob(ref_rejected_logits, rejected_ids, prompt_len)

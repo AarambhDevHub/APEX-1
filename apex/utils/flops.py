@@ -3,6 +3,11 @@ FLOPs Estimation for APEX-1.
 
 Estimates the floating-point operations per forward pass for each
 model size configuration.
+
+Fix BUG-17: SwiGLU elementwise multiply ``gate * value`` was missing
+from the FLOPs estimate.  Each SwiGLU layer performs ``S × d_ffn``
+elementwise multiply ops in addition to the 3 matrix multiplications.
+The fix adds this contribution to both dense and MoE FFN estimates.
 """
 
 from __future__ import annotations
@@ -82,16 +87,23 @@ def estimate_flops(config: APEXConfig, seq_len: int | None = None) -> dict[str, 
         is_moe = config.moe.enabled and layer_idx % config.moe.moe_layer_freq != 0
 
         if is_moe:
-            # Shared experts
-            shared_ffn = config.moe.n_shared * 2 * S * m.d_model * m.d_ffn * 3
-            # Routed experts (only n_active per token)
-            routed_ffn = config.moe.n_active * 2 * S * m.d_model * m.d_ffn * 3
+            # Shared experts: 3 matmuls + elementwise gate*value
+            shared_ffn = config.moe.n_shared * (
+                2 * S * m.d_model * m.d_ffn * 3  # W_gate, W_up, W_down
+                + S * m.d_ffn  # BUG-17 FIX: gate * value
+            )
+            # Routed experts (only n_active per token): same structure
+            routed_ffn = config.moe.n_active * (
+                2 * S * m.d_model * m.d_ffn * 3  # W_gate, W_up, W_down
+                + S * m.d_ffn  # BUG-17 FIX: gate * value
+            )
             # Router
             router = 2 * S * m.d_model * config.moe.n_experts
             layer_ffn = shared_ffn + routed_ffn + router
         else:
-            # Dense SwiGLU: 3 matrices
-            layer_ffn = 2 * S * m.d_model * m.d_ffn * 3
+            # Dense SwiGLU: 3 matrices + elementwise gate*value
+            # BUG-17 FIX: add S * d_ffn for the elementwise multiply
+            layer_ffn = 2 * S * m.d_model * m.d_ffn * 3 + S * m.d_ffn
 
         ffn_flops_total += layer_ffn
 

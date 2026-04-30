@@ -7,8 +7,6 @@ batching, and prefetching for pretraining and SFT.
 
 from __future__ import annotations
 
-from typing import Any, Optional
-
 import torch
 from torch.utils.data import DataLoader, Dataset, IterableDataset
 

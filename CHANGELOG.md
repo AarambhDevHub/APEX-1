@@ -5,6 +5,50 @@ All notable changes to APEX-1 will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.2.0] - 2026-04-30
+
+### Fixed
+
+**Training & Loss (BUG-12, BUG-24)**
+
+- **BUG-12 `losses.py`** — Speculative head losses now guard against short sequences where the offset `k` leaves fewer than 1 overlapping token. The previous guard `if k >= token_ids.shape[1]` was off-by-one — when `seq_len - k < 1` the sliced tensors were empty, causing `nan` from the cross-entropy loss.
+
+- **BUG-24 `dataset.py`** — `StreamingPretrainDataset` now emits an `attention_mask` alongside `input_ids`. Previously, when the final buffer was shorter than `seq_len`, padding tokens were added but treated as real training data — polluting the loss signal with meaningless pad-token predictions.
+
+**Tokenizer (BUG-14)**
+
+- **BUG-14 `tokenizer.py`** — `get_token_types()` now explicitly maps `<|thinking|>` and `<|/thinking|>` tokens to type 2 (assistant). Previously these tokens inherited the current type, which would be wrong if a thinking block appeared without a preceding `<|assistant|>` token — the thinking content would be labelled as system/user and excluded from the SFT loss.
+
+**Generation (BUG-15)**
+
+- **BUG-15 `generator.py`** — Speculative decoding draft acceptance is now probabilistic using `min(1, p_target / p_draft)` instead of greedy argmax comparison. The greedy approach altered the output distribution by only accepting drafts that matched the verification model's argmax, biasing output toward deterministic behaviour regardless of temperature.
+
+**Alignment (BUG-16)**
+
+- **BUG-16 `dpo.py`** — `dpo_loss` now passes `prefix_len=prompt_len` to the model so that prompt tokens receive bidirectional attention (GLM-4 style) instead of causal-only. Previously `prefix_len` defaulted to 0, producing a weaker contextual representation that degrades DPO training quality.
+
+**Utilities (BUG-17, BUG-23)**
+
+- **BUG-17 `flops.py`** — SwiGLU elementwise multiply `gate * value` was missing from the FLOPs estimate. Each SwiGLU layer performs `S × d_ffn` elementwise multiply ops in addition to the 3 matrix multiplications. The fix adds this contribution to both dense and MoE FFN estimates.
+
+- **BUG-23 `shape_checker.py`** — `verify_shapes()` now accepts an optional `model` parameter instead of always creating a new `APEX1Model` internally. Previously it always instantiated a fresh model, meaning it tested a randomly-initialised model rather than the caller's actual model.
+
+**Configuration (BUG-18)**
+
+- **BUG-18 `config.py`** — `validate()` now raises `ValueError` when `d_model != n_heads_q * d_head` instead of logging a warning. The mismatch causes a hard shape error in the attention output projection (`W_O`), so it must be caught before model construction.
+
+**CLI (BUG-20)**
+
+- **BUG-20 `train.py`** — The training log file is now written to `<checkpoint_dir>/training.log` instead of unconditionally to CWD. The previous `FileHandler("training.log")` would fail with permission errors in read-only environments or pollute unrelated directories. The file handler is added lazily after arguments are parsed with a graceful fallback.
+
+### Changed
+
+- `apex/utils/shape_checker.py` — `verify_shapes()` signature now includes `model: Optional[APEX1Model] = None`.
+- `apex/data/dataset.py` — `StreamingPretrainDataset.__iter__()` now yields dicts with both `input_ids` and `attention_mask`.
+- `apex/utils/flops.py` — FLOPs estimates are now slightly higher due to the SwiGLU elementwise multiply correction.
+
+---
+
 ## [2.1.0] - 2026-04-29
 
 ### Fixed

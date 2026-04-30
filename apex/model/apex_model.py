@@ -160,10 +160,10 @@ class APEX1Model(nn.Module):
             # MLA (global): uses d_head_rope cache for decoupled RoPE.
             # GQA (local):  uses d_head cache for standard RoPE.
             if layer_is_global:
-                cos = self.cos_cache_rope   # d_head_rope — for MLA rope projections
+                cos = self.cos_cache_rope  # d_head_rope — for MLA rope projections
                 sin = self.sin_cache_rope
             else:
-                cos = self.cos_cache        # d_head — for GQA Q/K rotations
+                cos = self.cos_cache  # d_head — for GQA Q/K rotations
                 sin = self.sin_cache
 
             x, new_kv = block(x, cos, sin, positions, attn_mask, layer_kv)

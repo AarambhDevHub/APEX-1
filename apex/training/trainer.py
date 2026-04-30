@@ -28,7 +28,7 @@ from torch.utils.data import DataLoader
 from apex.config import APEXConfig
 from apex.model.apex_model import APEX1Model
 from apex.model.load_balancer import LoadBalancer
-from apex.training.checkpoint import load_checkpoint, save_checkpoint
+from apex.training.checkpoint import save_checkpoint
 from apex.training.losses import compute_pretrain_loss, compute_sft_loss
 from apex.training.scheduler import CosineWarmupScheduler
 
@@ -90,7 +90,7 @@ class PreTrainer:
         moe_layers = model.get_moe_layers()
         for _layer_idx, moe_ffn in moe_layers:
             lb = LoadBalancer(
-                n_experts=moe_ffn.n_experts,   # ← use the layer's own count
+                n_experts=moe_ffn.n_experts,  # ← use the layer's own count
                 alpha=config.moe.balancer_alpha,
             )
             self.load_balancers.append(lb)
@@ -223,9 +223,7 @@ class PreTrainer:
                     and self.rank == 0
                 ):
                     val_loss = self._validate()
-                    logger.info(
-                        "Validation at step %d: loss=%.4f", self.global_step, val_loss
-                    )
+                    logger.info("Validation at step %d: loss=%.4f", self.global_step, val_loss)
                     if wandb_run is not None:
                         wandb_run.log({"val/loss": val_loss, "train/step": self.global_step})
 

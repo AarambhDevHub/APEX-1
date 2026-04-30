@@ -2,7 +2,7 @@
 
 # 🔺 APEX-1
 
-### A Best-of-All-Worlds Large Language Model — v2.1.0
+### A Best-of-All-Worlds Large Language Model — v2.2.0
 
 [![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](LICENSE)
 [![Python](https://img.shields.io/badge/Python-3.10%2B-green.svg)](https://python.org)
@@ -17,14 +17,18 @@
 
 ---
 
-## What's New in v2.1.0
+## What's New in v2.2.0
 
-- **15 bug fixes** across model core, alignment pipeline, training, and generation — including critical fixes to MLA KV caching (BUG-01), attention output projection (BUG-02), and Constitutional AI (BUG-03).
-- **Vectorised mask building** — sliding-window and global masks now use `torch.arange` broadcasting instead of Python loops, dramatically faster at long contexts.
-- **Vectorised YaRN scaling** — `apply_yarn_scaling` replaced per-dimension Python loop with `torch.where` operations.
-- **Load balancer optimised** — expert counting uses `torch.bincount` instead of a Python loop.
-- **Shape checker fixed** — `verify_shapes()` correctly validates the updated MLA tuple cache format.
-- **86 tests passing** — comprehensive regression test suite covering all fixed bugs.
+- **9 additional bug fixes** across training, tokenizer, generation, alignment, utilities, config, and CLI.
+- **Speculative loss guard** — multi-token head losses now handle short sequences without producing `nan` (BUG-12).
+- **Thinking token types** — `<|thinking|>` / `<|/thinking|>` now always labelled as assistant for SFT loss (BUG-14).
+- **Probabilistic speculative decoding** — draft acceptance uses `min(1, p_target/p_draft)` instead of greedy argmax (BUG-15).
+- **DPO bidirectional prompt attention** — `dpo_loss` now passes `prefix_len` for GLM-4-style prompt encoding (BUG-16).
+- **Accurate FLOPs estimation** — SwiGLU elementwise multiply now included in counts (BUG-17).
+- **Strict config validation** — `d_model != n_heads_q * d_head` now raises `ValueError` instead of warning (BUG-18).
+- **Robust training CLI** — log file written to checkpoint dir with graceful fallback (BUG-20).
+- **Shape checker accepts model** — `verify_shapes()` can now validate a pre-built model (BUG-23).
+- **Streaming dataset padding fix** — padding tokens now excluded from training loss via `attention_mask` (BUG-24).
 
 See the full [CHANGELOG](CHANGELOG.md) for details.
 

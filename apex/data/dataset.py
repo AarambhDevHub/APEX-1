@@ -6,6 +6,12 @@ Provides PyTorch datasets for:
 2. SFTDataset — instruction/response pairs with token type labels
 3. PreferenceDataset — (prompt, chosen, rejected) triples for DPO/GRPO
 4. StreamingPretrainDataset — memory-efficient streaming for large corpora
+
+Fix BUG-24: ``StreamingPretrainDataset`` now emits an ``attention_mask``
+alongside ``input_ids`` so the training loss can exclude padding tokens.
+Previously, when the final buffer was shorter than ``seq_len``, padding
+tokens were added but treated as real training data — polluting the loss
+signal with meaningless pad-token predictions.
 """
 
 from __future__ import annotations
@@ -312,12 +318,27 @@ class StreamingPretrainDataset(IterableDataset):
                     buffer.extend(tokens)
 
                     while len(buffer) >= self.seq_len:
-                        yield {"input_ids": torch.tensor(buffer[: self.seq_len], dtype=torch.long)}
+                        chunk = buffer[: self.seq_len]
+                        yield {
+                            "input_ids": torch.tensor(chunk, dtype=torch.long),
+                            "attention_mask": torch.ones(self.seq_len, dtype=torch.long),
+                        }
                         buffer = buffer[self.seq_len :]
 
         # Yield remaining if enough tokens
         if len(buffer) >= self.seq_len // 2:
-            # Pad to seq_len
-            pad_len = self.seq_len - len(buffer)
+            # BUG-24 FIX: emit an attention_mask that marks real tokens
+            # as 1 and padding tokens as 0, so the training loss can
+            # exclude pad positions instead of training on them.
+            real_len = len(buffer)
+            pad_len = self.seq_len - real_len
             buffer.extend([self.tokenizer.pad_token_id] * pad_len)
-            yield {"input_ids": torch.tensor(buffer[: self.seq_len], dtype=torch.long)}
+            yield {
+                "input_ids": torch.tensor(buffer[: self.seq_len], dtype=torch.long),
+                "attention_mask": torch.cat(
+                    [
+                        torch.ones(real_len, dtype=torch.long),
+                        torch.zeros(pad_len, dtype=torch.long),
+                    ]
+                ),
+            }

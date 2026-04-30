@@ -5,6 +5,14 @@ Implements:
 1. Pretraining loss: next-token prediction + multi-token auxiliary (Section 12a)
 2. SFT loss: cross-entropy on assistant tokens only (Section 12b)
 
+Fix BUG-12: Speculative head losses now guard against short sequences
+where the offset ``k`` leaves fewer than 1 overlapping token between
+the logits slice ``[:, :-k]`` and the target slice ``[:, k:]``.
+Previously the guard ``if k >= token_ids.shape[1]: break`` was
+off-by-one — it allowed ``k == seq_len - 1`` which gives only a single
+token, but missed the case where ``seq_len - k < 1`` after the shift,
+causing an empty cross-entropy that returned ``nan``.
+
 Pretraining formula:
     L = L_main + λ × mean(L_offset_k for k in 1..n_predict)
     λ = 0.1
@@ -59,7 +67,11 @@ def compute_pretrain_loss(
         n_spec = 0
 
         for k, spec_logits in enumerate(logits_speculative, start=1):
-            if k >= token_ids.shape[1]:
+            # BUG-12 FIX: skip heads where the offset k leaves fewer
+            # than 1 overlapping position between logits and targets.
+            # seq_len - k is the number of positions remaining after
+            # slicing; need at least 1 for a valid cross-entropy.
+            if token_ids.shape[1] - k < 1:
                 break
             spec_l = spec_logits[:, :-k, :].contiguous().view(-1, vocab_size)
             spec_t = token_ids[:, k:].contiguous().view(-1)

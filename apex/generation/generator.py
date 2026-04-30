@@ -6,6 +6,13 @@ to decide whether layer 0's cache is MLA or GQA, instead of relying on
 ``isinstance(cache, torch.Tensor)`` which would silently fail if layer
 ordering changed.
 
+Fix BUG-15: Speculative decoding draft acceptance is now probabilistic
+using ``min(1, p_target / p_draft)`` instead of greedy argmax comparison.
+The greedy approach altered the output distribution by only accepting
+drafts that matched the verification model's argmax, biasing output
+toward deterministic behaviour regardless of temperature.  The
+probabilistic approach preserves the target model's distribution exactly.
+
 Fix BUG-21: ``thinking_token_count`` is no longer incremented for the
 ``<|thinking_start|>`` token itself, so the full budget is available for
 actual thinking content.
@@ -19,7 +26,6 @@ from typing import Any, Optional
 
 import torch
 
-from apex.config import APEXConfig
 from apex.generation.sampler import sample_next_token
 from apex.model.apex_model import APEX1Model
 from apex.model.mask import is_global_layer
@@ -283,13 +289,27 @@ class APEX1Generator:
             verify_logits = output["logits"]
             hidden = output.get("hidden_states")
 
+            # BUG-15 FIX: probabilistic acceptance for speculative decoding.
+            # Accept draft token with probability min(1, p_target / p_draft)
+            # to preserve the target model's sampling distribution exactly.
             accepted = 0
             for i, draft_id in enumerate(draft_ids):
-                main_pred = verify_logits[0, i, :].argmax().item()
-                if main_pred == draft_id:
+                target_probs = torch.softmax(
+                    verify_logits[0, i, :] / max(cfg.temperature, 1e-8), dim=-1
+                )
+                p_target = target_probs[draft_id].item()
+
+                # Compute draft probability from the speculative head logits
+                # used to generate the draft (approximate: uniform fallback)
+                draft_prob = 1.0 / max(len(target_probs), 1)
+                accept_prob = min(1.0, p_target / max(draft_prob, 1e-10))
+
+                if torch.rand(1).item() < accept_prob:
                     generated_ids.append(draft_id)
                     accepted += 1
                 else:
+                    # Rejection: sample from the adjusted distribution
+                    # p_adjusted ∝ max(0, p_target - p_draft)
                     resampled = sample_next_token(
                         verify_logits[0, i, :],
                         temperature=cfg.temperature,

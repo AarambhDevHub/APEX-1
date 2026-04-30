@@ -1,6 +1,5 @@
 """Unit tests for all APEX-1 core modules."""
 
-import pytest
 import torch
 
 from apex.config import APEXConfig, get_tiny_config
@@ -23,7 +22,7 @@ from apex.model.rope import apply_rope, apply_yarn_scaling, precompute_rope_cach
 from apex.model.skip_gate import SkipGate
 from apex.training.checkpoint import load_checkpoint, save_checkpoint
 from apex.training.losses import compute_pretrain_loss, compute_sft_loss
-from apex.training.scheduler import CosineWarmupScheduler, get_lr
+from apex.training.scheduler import get_lr
 
 CFG = get_tiny_config()
 
@@ -99,19 +98,19 @@ class TestMask:
 
     def test_causal_generation(self):
         mask = build_apex_attention_mask(4, 8, 512, is_global_layer=True)
-        assert mask[5, 6] == False
-        assert mask[5, 5] == True
+        assert mask[5, 6] is False or not mask[5, 6]
+        assert mask[5, 5] is True or mask[5, 5]
 
     def test_sliding_window(self):
         mask = build_apex_attention_mask(0, 16, 4, is_global_layer=False)
-        assert mask[10, 10] == True
-        assert mask[10, 6] == False
+        assert mask[10, 10]
+        assert not mask[10, 6]
 
     def test_is_global_layer(self):
-        assert is_global_layer(5, 6) == True
-        assert is_global_layer(0, 6) == False
-        assert is_global_layer(11, 6) == True
-        assert is_global_layer(3, 6) == False
+        assert is_global_layer(5, 6)
+        assert not is_global_layer(0, 6)
+        assert is_global_layer(11, 6)
+        assert not is_global_layer(3, 6)
 
 
 # ── SkipGate ─────────────────────────────────────────────────────────────────

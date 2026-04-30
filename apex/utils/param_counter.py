@@ -8,7 +8,6 @@ Counts total and active parameters, breaking down by component type
 from __future__ import annotations
 
 import logging
-from typing import Any
 
 import torch.nn as nn
 
