@@ -45,7 +45,7 @@ In code: `K.repeat_interleave(G, dim=1)` — repeats each KV head G times.
 
 For the local layers, we do not need to attend to tokens far in the past. The **sliding window** restricts each query to only the most recent `local_window` tokens:
 
-$$\text{Attend to positions } p \text{ where: } \text{pos}_{query} - \text{pos}_{key} < \text{local\_window}$$
+$$\text{Attend to positions } p \text{ where: } \text{pos}_{query} - \text{pos}_{key} < \text{local window}$$
 
 **Why?**
 - Language has strong **local dependencies** — nearby words are most relevant for understanding syntax and immediate semantics.
