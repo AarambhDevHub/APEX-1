@@ -124,6 +124,91 @@ python examples/generation_demo.py
 pytest tests/ -v
 ```
 
+## 📖 Documentation
+
+A complete **beginner-to-expert** documentation suite lives in [`docs/`](docs/). Every file follows the same five-step format: **plain-English definition → analogy → LaTeX math → full annotated source code → design rationale**. All 24 bug fixes are explained in context.
+
+### 🟢 Part 1 — Foundations
+
+| File | What You Will Learn |
+|---|---|
+| [00 — Introduction](docs/00-introduction.md) | What an LLM is, key vocab, why build from scratch |
+| [01 — Project Structure](docs/01-project-structure.md) | Every file and folder explained, reading order |
+| [02 — Configuration](docs/02-configuration.md) | `APEXConfig` dataclasses, YAML loading, BUG-18 validation fix |
+| [03 — Tokenizer](docs/03-tokenizer.md) | BPE, special tokens, token types for SFT masking, BUG-14 |
+
+### 🔵 Part 2 — Building Blocks
+
+| File | What You Will Learn |
+|---|---|
+| [04 — Embeddings & RMSNorm](docs/04-embeddings-and-rmsnorm.md) | Embedding scale, weight tying, RMSNorm formula |
+| [05 — Positional Encoding (RoPE & YaRN)](docs/05-positional-encoding-rope.md) | Rotation math, three-regime YaRN scaling, BUG-22 vectorisation |
+| [06 — Attention Masks](docs/06-attention-masks.md) | Prefix-bidir + causal + sliding window, BUG-10 vectorised fix |
+
+### 🟣 Part 3 — Attention Mechanisms
+
+| File | What You Will Learn |
+|---|---|
+| [07 — Multi-Head Latent Attention (MLA)](docs/07-attention-mla.md) | 93% KV cache compression, BUG-01 K_rope zeros, BUG-02 W_O size |
+| [08 — GQA + Sliding Window](docs/08-attention-gqa.md) | Group sharing, window locality, 5:1 local/global ratio |
+
+### 🟠 Part 4 — Feed-Forward Networks & Experts
+
+| File | What You Will Learn |
+|---|---|
+| [09 — FFN & SwiGLU](docs/09-ffn-swiglu.md) | 3-matrix SwiGLU, dead neuron problem, BUG-17 FLOPs fix |
+| [10 — Mixture of Experts](docs/10-mixture-of-experts.md) | 3-tier hierarchy, routing math, BUG-08 dispatch fix |
+| [11 — Dynamic Skip Gate](docs/11-skip-gate.md) | STE binary threshold, 25-35% FFN savings, learned skip patterns |
+| [12 — Auxiliary-Loss-Free Load Balancer](docs/12-load-balancer.md) | Expert collapse, sign-gradient bias update, BUG-11 |
+| [13 — Multi-Token Prediction Head](docs/13-multi-token-head.md) | 4-head speculative prediction, auxiliary loss, BUG-12 NaN |
+
+### 🔴 Part 5 — The Full Model
+
+| File | What You Will Learn |
+|---|---|
+| [14 — Transformer Block](docs/14-transformer-block.md) | Pre-norm, residual connections, layer type assignment, BUG-19 |
+| [15 — APEX1Model](docs/15-full-model.md) | Two RoPE caches BUG-07, KV position detection BUG-09, full forward pass |
+
+### 🟡 Part 6 — Training
+
+| File | What You Will Learn |
+|---|---|
+| [16 — Training Losses](docs/16-training-losses.md) | Cross-entropy, SFT token masking, speculative loss, BUG-12 |
+| [17 — Optimizer & LR Scheduler](docs/17-scheduler-and-optimizer.md) | AdamW full math, cosine warmup curve, hyperparameter guide |
+| [18 — Training Pipeline](docs/18-training-pipeline.md) | Mixed precision, gradient accumulation, full `PreTrainer`, BUG-11 |
+| [19 — Checkpointing](docs/19-checkpointing.md) | What to save, RNG state, BUG-13 Python RNG fix, resume example |
+| [20 — Datasets](docs/20-datasets.md) | 4 dataset types, packing, streaming, BUG-24 padding mask |
+
+### ⚪ Part 7 — Text Generation
+
+| File | What You Will Learn |
+|---|---|
+| [21 — Sampling Strategies](docs/21-generation-sampling.md) | KV cache, temperature/top-p/top-k/rep-penalty, full generator |
+| [22 — Speculative Decoding](docs/22-speculative-decoding.md) | Draft-verify loop, probabilistic acceptance math, BUG-15 |
+| [23 — Thinking Mode](docs/23-thinking-mode.md) | CoT scratchpad, budget management, BUG-21, temperature switching |
+
+### 🟤 Part 8 — Alignment & Safety
+
+| File | What You Will Learn |
+|---|---|
+| [24 — Reward Model](docs/24-reward-model.md) | Bradley-Terry loss, preference pairs, BUG-05 import fix |
+| [25 — DPO](docs/25-dpo.md) | Implicit reward derivation, closed-form preference opt, BUG-16 |
+| [26 — GRPO](docs/26-grpo.md) | RL without value function, PPO-clip explained, BUG-04 generation |
+| [27 — Process Reward Model](docs/27-process-reward-model.md) | Step-level rewards, product scoring, BUG-06 tokenizer warning |
+| [28 — Constitutional AI](docs/28-constitutional-ai.md) | Critique-revision loop, constitution format, BUG-03 |
+| [29 — Combined Reward](docs/29-combined-reward.md) | Tri-signal formula (outcome + process + CAI), ablation table |
+
+### ⚫ Part 9 — Utilities & Walkthrough
+
+| File | What You Will Learn |
+|---|---|
+| [30 — Utilities](docs/30-utilities.md) | Shape checker BUG-23, FLOPs BUG-17, param counter |
+| [31 — End-to-End Walkthrough](docs/31-end-to-end-walkthrough.md) | Full runnable code: install → pretrain → SFT → generate |
+
+> **Start here if you are new:** [docs/00-introduction.md](docs/00-introduction.md)
+
+---
+
 ## Project Structure
 
 ```
