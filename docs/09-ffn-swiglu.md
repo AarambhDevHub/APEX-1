@@ -50,7 +50,7 @@ $$\text{SiLU}(z) = z \cdot \sigma(z) = \frac{z}{1 + e^{-z}}$$
 2. $\text{SiLU}(\cdot)$ → smooth, differentiable gating (unlike ReLU's hard 0/1 cut)
 3. $W_{up}\, x$ → the actual information to pass
 4. $\odot$ → the gate **modulates** the information (element-wise product)
-5. $W_{down}\, (\cdot)$ → project back to d_model
+5. $W_{down}\, (\cdot)$ → project back to `d_model`
 
 ### Why Better Than ReLU?
 

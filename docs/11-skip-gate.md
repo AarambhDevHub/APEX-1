@@ -21,8 +21,9 @@ The skip gate is a 2-layer MLP that outputs a scalar between 0 and 1:
 $$g(x) = \sigma\!\left(W_2 \cdot \text{SiLU}(W_1 x)\right) \in [0, 1]$$
 
 where $\sigma$ is the sigmoid function and:
-- $W_1 \in \mathbb{R}^{d_{hidden} \times d_{model}}$ (d_hidden is small, e.g., 64)
+- $W_1 \in \mathbb{R}^{d_{hidden} \times d_{model}}$ (`d_hidden` is small, e.g., 64)
 - $W_2 \in \mathbb{R}^{1 \times d_{hidden}}$
+
 
 The output $g$ is one number per token: close to 1 → run the FFN; close to 0 → skip it.
 
