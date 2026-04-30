@@ -29,7 +29,7 @@ $$\text{MHA} = \text{Concat}(\text{head}_1, \ldots, \text{head}_h) W_O$$
 
 At generation time, the model produces one token per step but must attend to all previous tokens. Recomputing K and V for all past tokens every step costs $O(n^2)$. The **KV cache** stores past K and V tensors.
 
-**Problem:** For a 128K-token sequence with Large config (128 heads, d_head=128, 72 layers):
+**Problem:** For a 128K-token sequence with Large config (128 heads, `d_head=128`, 72 layers):
 $$\text{Cache size} = 72 \times 2 \times 128 \times 128 \times 128 \approx 600\text{ MB per sequence}$$
 
 This is unacceptable for serving many users simultaneously.
@@ -46,7 +46,7 @@ K and V are reconstructed on demand:
 
 $$K_{content} = W_{UK}\, c_{KV}, \qquad V = W_{UV}\, c_{KV}$$
 
-For Large config: $d_{kv\_compressed} = 512$ vs. $n_{kv} \times d_{head} = 8 \times 128 = 1024$ → **50% savings per layer** (the 93% figure comes from comparing against the naïve full n_heads_q KV cache).
+For Large config: $d_{kv\_compressed} = 512$ vs. $n_{kv} \times d_{head} = 8 \times 128 = 1024$ → **50% savings per layer** (the 93% figure comes from comparing against the naïve full `n_heads_q` KV cache).
 
 ---
 

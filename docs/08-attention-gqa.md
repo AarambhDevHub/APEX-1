@@ -176,7 +176,7 @@ class GQASlidingWindowAttention(nn.Module):
 | Attention scope | Last `local_window` tokens | All previous tokens |
 | Memory cost | $O(w)$ per layer | $O(d_{compressed})$ per layer |
 | Compute cost | $O(S \times w)$ | $O(S^2)$ (within layer) |
-| Position encoding | Standard RoPE on d_head | Decoupled RoPE on d_head_rope |
+| Position encoding | Standard RoPE on `d_head` | Decoupled RoPE on `d_head_rope` |
 
 ---
 

@@ -79,7 +79,7 @@ class AttentionConfig:
     flash: bool = True          # Use Flash Attention (faster on GPU)
 ```
 
-**global_layer_freq = 6** means: in a 12-layer model, layers 5 and 11 are global (MLA), and layers 0–4 and 6–10 are local (GQA). The pattern is: every 6th layer (counting from 0) — specifically when `layer_idx % 6 == 5`.
+**`global_layer_freq = 6`** means: in a 12-layer model, layers 5 and 11 are global (MLA), and layers 0–4 and 6–10 are local (GQA). The pattern is: every 6th layer (counting from 0) — specifically when `layer_idx % 6 == 5`.
 
 ---
 
@@ -98,7 +98,7 @@ class MoEConfig:
     balancer_alpha: float = 0.001 # Load balancer step size
 ```
 
-**n_active / n_experts** is the "sparsity ratio". For Large: 8 out of 256 = 3.1% of experts active per token. This is what makes large models feasible — you have 900B total parameters but only ~45B are computed per token.
+**`n_active / n_experts`** is the "sparsity ratio". For Large: 8 out of 256 = 3.1% of experts active per token. This is what makes large models feasible — you have 900B total parameters but only ~45B are computed per token.
 
 ---
 
