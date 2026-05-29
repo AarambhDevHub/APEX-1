@@ -22,6 +22,8 @@ from apex.model.load_balancer import LoadBalancer
 from apex.model.norm import RMSNorm
 from apex.model.rope import apply_rope, apply_yarn_scaling, precompute_rope_cache, rotate_half
 from apex.model.skip_gate import SkipGate
+from apex.model.apex_vision_model import APEX1VisionModel
+
 
 __all__ = [
     "APEX1Model",
@@ -37,4 +39,5 @@ __all__ = [
     "rotate_half",
     "apply_rope",
     "apply_yarn_scaling",
+    "APEX1VisionModel",
 ]

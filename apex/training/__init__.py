@@ -17,4 +17,5 @@ __all__ = [
     "CosineWarmupScheduler",
     "save_checkpoint",
     "load_checkpoint",
+    "VisionSFTTrainer",
 ]

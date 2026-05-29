@@ -2,24 +2,24 @@
 
 # 🔺 APEX-1
 
-### A Best-of-All-Worlds Large Language Model — v2.2.0
+### A Best-of-All-Worlds Large Language + Vision Model — v2.3.0
 
 [![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](LICENSE)
 [![Python](https://img.shields.io/badge/Python-3.10%2B-green.svg)](https://python.org)
 [![Status](https://img.shields.io/badge/Status-Architecture%20Complete-brightgreen.svg)]()
-[![Tests](https://img.shields.io/badge/Tests-86%20Passing-success.svg)]()
-[![Docs](https://img.shields.io/badge/Docs-31%20Guides-orange.svg)](docs/)
+[![Tests](https://img.shields.io/badge/Tests-96%20Passing-success.svg)]()
+[![Docs](https://img.shields.io/badge/Docs-32%20Guides-orange.svg)](docs/)
 [![Course](https://img.shields.io/badge/Course-Free%20%26%20Open-purple.svg)](docs/00-introduction.md)
 
-**Inspired by:** Claude · GPT-4.5 · DeepSeek-V3/R1 · Qwen3 · Gemma 4 · GLM-4 · KIMI · MiniMax · Llama 3
+**Inspired by:** Claude · GPT-4.5 · DeepSeek-V3/R1 · Qwen3 · Gemma 4 · GLM-4 · KIMI · MiniMax · Llama 3 · LLaVA · Flamingo · ViT
 
-*Build a frontier-grade LLM from scratch. Understand every line.*
+*Build a frontier-grade language + vision model from scratch. Understand every line.*
 
 ---
 
 ### 🆓 This Course Is Completely Free
 
-Other LLM courses charge **$50–$500+** for content like this. APEX-1 is free and always will be — 31 lessons, 4 math references, 24 bug-fix engineering lessons, full annotated source code, and 86 tests. No paywalls. No sign-ups. Just open source.
+Other LLM courses charge **$50–$500+** for content like this. APEX-1 is free and always will be — 32 lessons, 4 math references, 24 bug-fix engineering lessons, full annotated source code, and 96 tests. No paywalls. No sign-ups. Just open source.
 
 If this helped you learn, please consider supporting so we can keep building free education:
 
@@ -41,7 +41,33 @@ APEX-1 is two things at once.
 
 **As a course**, it is a complete beginner-to-expert curriculum for understanding how modern large language models actually work — not toy GPT-2 clones, but the real techniques inside frontier models like Claude, GPT-4, and DeepSeek. Every component is fully documented, every design decision is explained, and 24 real bugs are preserved and explained as engineering lessons.
 
+**As a vision-language model preview**, APEX-1 can now accept images through the existing `<|img|>` token. Images are encoded into visual tokens, projected into the APEX hidden space, and processed by the same decoder-only transformer context. This is the foundation for image captioning, visual question answering, screenshot understanding, chart understanding, and future multi-image reasoning.
+
+
 > **If you have ever wanted to understand what is really inside a modern LLM — not just the theory but the actual code — this is for you.**
+
+---
+
+## 🖼️ Vision Capability Status
+
+APEX-1 includes a complete **educational multimodal architecture**. It can load an image, preprocess it, encode it into patch features, project those features into APEX's language hidden space, replace the `<|img|>` placeholder with continuous visual tokens, and run image + text through the same decoder-only transformer.
+
+This means the vision pipeline is architecturally complete and fully testable on CPU.
+
+> **Important:** APEX-1 does **not** ship with pretrained vision weights. The model can process images, but real semantic image understanding requires training on image-caption or visual-instruction datasets. This is intentional: APEX-1 is a course project for learning the architecture from scratch, not a large pretrained multimodal checkpoint.
+
+Course status:
+
+| Capability | Status |
+|---|---|
+| Image preprocessing | ✅ Complete |
+| Native patch-based vision encoder | ✅ Complete |
+| Vision-to-language projector | ✅ Complete |
+| `<|img|>` placeholder replacement | ✅ Complete |
+| Visual tokens inside APEX transformer | ✅ Complete |
+| Vision SFT loss and label expansion | ✅ Complete |
+| CPU tests and demos | ✅ Complete |
+| Real image understanding | Requires training / pretrained weights |
 
 ---
 
@@ -53,11 +79,11 @@ APEX-1 is two things at once.
 | **Self-taught developers** | A structured path from "what is a token" to "how does GRPO work" |
 | **ML practitioners** | Deep dives into MLA, MoE, speculative decoding, and modern alignment techniques |
 | **Researchers** | A fully-specified, reproducible reference architecture synthesizing 2024–2025 frontier techniques |
-| **YouTube / content learners** | 31 documentation files, each structured as a complete lesson |
+| **YouTube / content learners** | 32 documentation files, each structured as a complete lesson |
 
 ---
 
-## 📚 The Curriculum — 31 Lessons
+## 📚 The Curriculum — 32 Lessons
 
 Every lesson follows the same five-step format:
 
@@ -139,6 +165,7 @@ Every lesson follows the same five-step format:
 |---|---|---|
 | [30](docs/30-utilities.md) | Utilities | Shape checker BUG-23, FLOPs BUG-17, param counter |
 | [31](docs/31-end-to-end-walkthrough.md) | End-to-End Walkthrough | Full runnable code: install → pretrain → SFT → generate |
+| [32](docs/32-vision-capabilities.md) | Vision Capabilities | Image encoder, Perceiver projector, visual-token insertion, multimodal SFT |
 
 ---
 
@@ -219,11 +246,28 @@ APEX-1 picks the single best innovation from each frontier lab:
 | Thinking mode (CoT) | DeepSeek-R1 / Claude | Built-in reasoning scratchpad |
 | GRPO alignment | DeepSeek-R1 | Stable RL, no reward model needed |
 | Constitutional AI | Anthropic | Safety baked in, not patched on |
+| Visual token bridge | LLaVA / Flamingo / Qwen-VL style | Images become context tokens without rewriting the decoder |
+| Native ViT encoder | Vision Transformer | From-scratch educational image encoder |
+| Perceiver resampler | Flamingo-style compression | Fixed visual token budget for efficient multimodal context |
 
 ```
 Input tokens [batch, seq_len]
         │
         ▼
+Image pixels [batch, 3, H, W]
+        │
+        ▼
+┌─────────────────────┐
+│ Vision Encoder      │  ViT patch features
+└─────────┬───────────┘
+          ▼
+┌─────────────────────┐
+│ Vision Projector    │  Perceiver/MLP → d_model visual tokens
+└─────────┬───────────┘
+          ▼
+Inserted at <|img|> inside token embeddings
+                │
+                ▼
 ┌─────────────────────┐
 │  Embedding × √d     │  Weight-tied with LM head
 └─────────┬───────────┘
@@ -259,17 +303,27 @@ Input tokens [batch, seq_len]
 
 ## 📊 Model Sizes
 
-| Parameter | Small | Medium | Large |
-|---|---|---|---|
-| `d_model` | 512 | 2,048 | 7,168 |
-| `n_layers` | 12 | 36 | 72 |
-| `n_heads_q` | 8 | 16 | 128 |
-| `n_experts` | 8 | 64 | 256 |
-| `max_seq_len` | 8K | 64K | 128K |
-| Total params | ~100M | ~7B | ~900B |
-| Active params | ~40M | ~2B | ~45B |
+| Parameter | Tiny | Small | Medium | Large |
+|---|---:|---:|---:|---:|
+| `d_model` | 64 | 512 | 2,048 | 7,168 |
+| `n_layers` | 6 | 12 | 36 | 72 |
+| `n_heads_q` | 4 | 8 | 16 | 128 |
+| `n_experts` | 4 | 8 | 64 | 256 |
+| `max_seq_len` | 256 | 8K | 64K | 128K |
+| Total params | ~1M | ~100M | ~7B | ~900B |
+| Active params | tiny CPU | ~40M | ~2B | ~45B |
 
-Start with **APEX-1-Tiny** (`configs/apex1_tiny.yaml`) — ~1M params, runs on CPU in seconds. Perfect for following along with the lessons.
+### Vision Configuration
+
+| Vision Parameter | Tiny Vision Default | Why |
+|---|---:|---|
+| `image_size` | 64 | CPU-friendly demos |
+| `patch_size` | 16 | 4×4 image patches |
+| `vision_hidden_dim` | 64 | Matches tiny model scale |
+| `num_visual_tokens` | 4 | Fixed visual-token budget |
+| Projector | Perceiver / MLP | Compress image features into language tokens |
+
+Start with **APEX-1-Tiny** (`configs/apex1_tiny.yaml`) — ~1M params, runs on CPU in seconds. For multimodal lessons, start with **APEX-1-Tiny-Vision** (`configs/apex1_tiny_vision.yaml`), which also runs on CPU for forward-pass demos and tests.
 
 ---
 
@@ -285,7 +339,7 @@ python -m venv .venv
 source .venv/bin/activate
 pip install -e ".[all]"
 
-# Run a forward pass (no training needed)
+# Run a text forward pass (no training needed)
 python examples/forward_pass_demo.py
 
 # Run text generation
@@ -297,49 +351,121 @@ python examples/thinking_mode_demo.py
 # Visualise attention masks
 python examples/mask_visualization.py
 
-# Run all 86 tests
+# Try a vision forward pass (CPU-friendly)
+python examples/vision_forward_demo.py
+
+# Run only vision tests
+pytest tests/test_vision.py -v
+
+# Run the full suite: 86 core + 10 vision tests
 pytest tests/ -v
+```
+
+Expected vision demo output:
+
+```txt
+Input text tokens: (1, 7)
+Visual tokens inserted: 4
+Logits: (1, 10, 1000)
+Hidden states: (1, 10, 64)
+KV cache layers: 6
 ```
 
 ---
 
 ## 📁 Project Structure
 
-```
+```txt
 APEX-1/
 ├── apex/
-│   ├── config.py              # All hyperparameters — start here
+│   ├── config.py                 # All hyperparameters — text, training, alignment, vision
+│   │
 │   ├── model/
-│   │   ├── norm.py            # RMSNorm
-│   │   ├── rope.py            # RoPE + YaRN
-│   │   ├── mask.py            # Attention mask builder
-│   │   ├── attention.py       # MLA + GQA+SW
-│   │   ├── ffn.py             # DenseFFN + MoEFFN
-│   │   ├── skip_gate.py       # Dynamic skip gate
-│   │   ├── load_balancer.py   # Auxiliary-loss-free balancer
-│   │   ├── multi_token_head.py# Speculative prediction heads
-│   │   ├── block.py           # One complete transformer block
-│   │   └── apex_model.py      # The complete model
-│   ├── tokenizer/             # BPE tokenizer + training script
-│   ├── generation/            # Sampling + generation engine
-│   ├── training/              # Loss functions, trainer, scheduler, checkpoint
-│   ├── alignment/             # Reward model, DPO, GRPO, PRM, CAI
-│   ├── data/                  # Dataset classes + DataLoader factories
-│   └── utils/                 # Shape checker, FLOPs, param counter
-├── configs/                   # YAML presets: tiny / small / medium / large
-├── docs/                      # 31 lessons + 4 math reference docs
-├── tests/                     # 86 passing tests (unit + regression)
-├── examples/                  # Quick demo scripts
-└── scripts/                   # Training and generation CLIs
+│   │   ├── norm.py               # RMSNorm
+│   │   ├── rope.py               # RoPE + YaRN
+│   │   ├── mask.py               # Attention mask builder
+│   │   ├── attention.py          # MLA + GQA+SW
+│   │   ├── ffn.py                # DenseFFN + MoEFFN
+│   │   ├── skip_gate.py          # Dynamic skip gate
+│   │   ├── load_balancer.py      # Auxiliary-loss-free balancer
+│   │   ├── multi_token_head.py   # Speculative prediction heads
+│   │   ├── block.py              # One complete transformer block
+│   │   ├── apex_model.py         # The complete text-only APEX-1 model
+│   │   └── apex_vision_model.py  # Multimodal APEX-1 model: text + image tokens
+│   │
+│   ├── vision/
+│   │   ├── __init__.py           # Vision module exports
+│   │   ├── preprocess.py         # Image loading, resizing, normalization
+│   │   ├── encoder.py            # Native patch-based vision encoder
+│   │   └── projector.py          # Vision-to-language projector / visual token mapper
+│   │
+│   ├── tokenizer/
+│   │   ├── tokenizer.py          # BPE tokenizer + <|img|> placeholder support
+│   │   └── train_tokenizer.py    # Tokenizer training script
+│   │
+│   ├── generation/               # Sampling + generation engine
+│   ├── training/
+│   │   ├── losses.py             # Text pretraining + SFT losses
+│   │   ├── vision_losses.py      # Vision SFT loss + visual-token label expansion
+│   │   ├── trainer.py            # Training loop
+│   │   ├── scheduler.py          # LR scheduler
+│   │   └── checkpoint.py         # Save / load checkpoints
+│   │
+│   ├── alignment/                # Reward model, DPO, GRPO, PRM, CAI
+│   │
+│   ├── data/
+│   │   ├── dataset.py            # Text dataset classes + DataLoader factories
+│   │   └── vision_dataset.py     # Image-caption / vision-instruction dataset
+│   │
+│   └── utils/                    # Shape checker, FLOPs, param counter
+│
+├── configs/
+│   ├── apex1_tiny.yaml           # Tiny text-only config
+│   ├── apex1_small.yaml          # Small text-only config
+│   ├── apex1_medium.yaml         # Medium text-only config
+│   ├── apex1_large.yaml          # Large text-only config
+│   └── apex1_tiny_vision.yaml    # Tiny multimodal config for CPU tests/demos
+│
+├── docs/
+│   ├── 00-introduction.md
+│   ├── ...
+│   ├── 31-end-to-end-walkthrough.md
+│   ├── 32-vision-capabilities.md # Vision architecture lesson
+│   └── APEX-1-Mathematical-Reference-Part*.md
+│
+├── tests/
+│   ├── test_all.py               # Core unit tests
+│   ├── test_bugfixes.py          # Regression tests for documented bugs
+│   └── test_vision.py            # Vision config, encoder, projector, model, loss tests
+│
+├── examples/
+│   ├── forward_pass_demo.py      # Text forward-pass demo
+│   ├── generation_demo.py        # Text generation demo
+│   ├── thinking_mode_demo.py     # Thinking mode demo
+│   ├── mask_visualization.py     # Attention mask visualisation
+│   ├── vision_forward_demo.py    # Image + text forward-pass demo
+│   └── vision_chat_demo.py       # Vision chat prompt demo
+│
+├── scripts/
+│   ├── train.py                  # Text training CLI
+│   └── generate.py               # Text generation CLI
+│
+├── README.md
+├── CHANGELOG.md
+├── pyproject.toml
+└── LICENSE
 ```
 
 ---
 
-## 🧪 What's New in v2.2.0
+## 🧪 What's New in v2.3.0
 
-- **9 additional bug fixes** — speculative loss NaN (BUG-12), thinking token types (BUG-14), probabilistic speculative acceptance (BUG-15), DPO bidirectional prompt (BUG-16), FLOPs accuracy (BUG-17), strict config validation (BUG-18), training log path (BUG-20), shape checker model param (BUG-23), streaming dataset padding (BUG-24)
-- **Complete documentation suite** — all 31 lessons and 4 math references finished
-- **86 passing tests** across unit tests and regression tests for all 24 bugs
+- **Vision capability architecture** — native ViT-style image encoder, vision-to-language projector, and `APEX1VisionModel`.
+- **`<|img|>` is now active** — image placeholders are replaced by continuous visual tokens before the transformer runs.
+- **CPU-friendly multimodal demos** — `examples/vision_forward_demo.py` and `examples/vision_chat_demo.py`.
+- **Vision training utilities** — JSONL vision dataset, visual-token label expansion, and multimodal SFT loss.
+- **New guide** — `docs/32-vision-capabilities.md`.
+- **96 passing tests** — 86 core tests + 10 vision tests.
 
 Full history in [CHANGELOG.md](CHANGELOG.md).
 
@@ -373,6 +499,7 @@ Key areas where contributions help:
 - Additional test coverage for alignment modules
 - Translations of documentation to other languages
 - Bug reports and fixes
+- CPU-friendly vision examples, datasets, and training notebooks
 
 ---
 
@@ -380,7 +507,7 @@ Key areas where contributions help:
 
 ```bibtex
 @software{apex1_2026,
-  title  = {APEX-1: A Best-of-All-Worlds Large Language Model},
+  title  = {APEX-1: A Best-of-All-Worlds Large Language + Vision Model},
   author = {Aarambh Dev Hub},
   year   = {2026},
   url    = {https://github.com/AarambhDevHub/APEX-1},
@@ -403,6 +530,7 @@ APEX-1 stands on the shoulders of giants. Architectural innovations from:
 - **Moonshot AI** (KIMI) — YaRN context extension
 - **MiniMax** — Efficient MoE design
 - **Meta** (Llama 3) — GQA + sliding window, SwiGLU
+- **LLaVA / Flamingo / ViT research** — visual-token bridge, image encoder, and multimodal instruction-tuning pattern
 
 ---
 
