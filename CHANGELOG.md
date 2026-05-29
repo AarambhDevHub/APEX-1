@@ -5,6 +5,30 @@ All notable changes to APEX-1 will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.3.0] — Vision Preview
+
+### Added
+
+- Added `VisionConfig` to `apex/config.py`.
+- Added `apex.vision` package:
+  - `ImagePreprocessor`
+  - `NativeVisionEncoder`
+  - `VisionToTextProjector`
+  - `PerceiverResampler`
+- Added `APEX1VisionModel`, a decoder-only vision-language wrapper that inserts image-derived visual tokens at the `<|img|>` placeholder.
+- Added `VisionInstructionDataset` and `collate_vision_batch` for image-question-answer JSONL data.
+- Added `expand_labels_for_visual_tokens` and `compute_vision_sft_loss` for multimodal SFT.
+- Added `configs/apex1_tiny_vision.yaml`.
+- Added `examples/vision_forward_demo.py` and `examples/vision_chat_demo.py`.
+- Added `tests/test_vision.py`.
+- Added `docs/32-vision-capabilities.md`.
+
+### Notes
+
+- v2.3.0 adds the architecture and training path for image understanding.
+- Real image understanding requires training or a future adapter to a pretrained vision encoder such as CLIP/SigLIP/DINOv2.
+- Existing `APEX1Model` text-only behavior is unchanged.
+
 ## [2.2.0] - 2026-04-30
 
 ### Fixed

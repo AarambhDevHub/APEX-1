@@ -4,15 +4,15 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "apex-1"
-version = "2.2.0"
-description = "APEX-1: A Best-of-All-Worlds Large Language Model"
+version = "2.3.0"
+description = "APEX-1: A Best-of-All-Worlds Large Language + Vision Model"
 readme = "README.md"
 license = {text = "Apache-2.0"}
 requires-python = ">=3.10"
 authors = [
     {name = "Aarambh Dev Hub"},
 ]
-keywords = ["llm", "transformer", "deep-learning", "moe", "mla", "nlp"]
+keywords = ["llm", "vlm", "vision", "multimodal", "transformer", "deep-learning", "moe", "mla", "nlp"]
 classifiers = [
     "Development Status :: 4 - Beta",
     "Intended Audience :: Developers",
@@ -49,7 +49,10 @@ dev = [
     "mypy>=1.5.0",
     "pre-commit>=3.4.0",
 ]
-all = ["apex-1[train,dev]"]
+all = ["apex-1[train,dev,vision]"]
+vision = [
+    "pillow>=10.0.0",
+]
 
 [project.urls]
 Homepage = "https://github.com/AarambhDevHub/APEX-1"

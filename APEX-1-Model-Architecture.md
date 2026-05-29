@@ -1,6 +1,6 @@
 # APEX-1 Model Architecture
-### A Best-of-All-Worlds LLM Design — v2.0
-**Inspired by:** Claude · GPT-4.5 · DeepSeek-V3/R1 · Qwen3 · Gemma 4 · GLM-4 · KIMI · MiniMax · Llama 3
+### A Best-of-All-Worlds Language + Vision Model Design — v2.3.0
+**Inspired by:** Claude · GPT-4.5 · DeepSeek-V3/R1 · Qwen3 · Gemma 4 · GLM-4 · KIMI · MiniMax · Llama 3 · LLaVA · Flamingo · ViT
 
 ---
 
@@ -10,46 +10,31 @@
 2. [Tokenizer](#2-tokenizer)
 3. [Model Dimensions & Hyperparameters](#3-model-dimensions--hyperparameters)
 4. [Input Embedding Layer](#4-input-embedding-layer)
-5. [Rotary Positional Encoding — RoPE + YaRN](#5-rotary-positional-encoding--rope--yarn)
-6. [Transformer Block — Full Stack](#6-transformer-block--full-stack)
-   - 6a. Pre-Norm with RMSNorm
-   - 6b. Attention Strategy: MLA vs GQA (which layers use which)
-   - 6c. Multi-Head Latent Attention (MLA) — full forward pass
-   - 6d. Grouped Query Attention + Sliding Window (GQA+SW) — full forward pass
-   - 6e. Interleaved Local / Global Attention — implementation
-   - 6f. Prefix Bidirectional Attention Mask
-   - 6g. Flash Attention v3
-   - 6h. Feed-Forward Network with SwiGLU
-   - 6i. Mixture of Experts (MoE) — full forward pass
-   - 6j. Auxiliary-Loss-Free Load Balancing — full algorithm
-   - 6k. Dynamic Skip Gate
-   - 6l. Residual Connections
-7. [KV Cache & Memory Optimization](#7-kv-cache--memory-optimization)
-8. [Long Context Handling](#8-long-context-handling)
-9. [Language Model Head](#9-language-model-head)
-10. [Sampling & Decoding Strategy](#10-sampling--decoding-strategy)
-11. [Reasoning / Thinking Mode](#11-reasoning--thinking-mode)
-12. [Training Pipeline — Full Detail](#12-training-pipeline--full-detail)
-    - 12a. Phase 1: Pre-training (loss, optimizer, schedule)
-    - 12b. Phase 2: Supervised Fine-Tuning
-    - 12c. Gradient flow through MoE layers
-13. [Alignment: RLHF → DPO → GRPO — Full Detail](#13-alignment-rlhf--dpo--grpo--full-detail)
-    - 13a. RLHF + PPO
-    - 13b. DPO
-    - 13c. GRPO — full rollout loop with code
-    - 13d. Constitutional AI
-    - 13e. Process Reward Model (PRM)
-    - 13f. Dual-signal alignment (GRPO + CAI simultaneously)
-14. [Inference Optimizations](#14-inference-optimizations)
-15. [Model Size Configurations](#15-model-size-configurations)
-16. [Full Forward Pass — Step by Step](#16-full-forward-pass--step-by-step)
-17. [Implementation Checklist](#17-implementation-checklist)
+5. [Vision Input Pipeline — Image → Visual Tokens](#5-vision-input-pipeline--image--visual-tokens)
+6. [Rotary Positional Encoding — RoPE + YaRN](#6-rotary-positional-encoding--rope--yarn)
+7. [Transformer Block — Full Stack](#7-transformer-block--full-stack)
+   - 7a. Pre-Norm with RMSNorm
+   - 7b. Attention Strategy: MLA vs GQA
+   - 7c. Multi-Head Latent Attention
+   - 7d. Grouped Query Attention + Sliding Window
+   - 7e. Prefix Bidirectional Attention Mask
+   - 7f. Feed-Forward Network, MoE, Load Balancing, Skip Gate
+8. [KV Cache & Memory Optimization](#8-kv-cache--memory-optimization)
+9. [Long Context Handling](#9-long-context-handling)
+10. [Language Model Head](#10-language-model-head)
+11. [Sampling & Decoding Strategy](#11-sampling--decoding-strategy)
+12. [Reasoning / Thinking Mode](#12-reasoning--thinking-mode)
+13. [Training Pipeline — Text + Vision](#13-training-pipeline--text--vision)
+14. [Alignment: RLHF → DPO → GRPO](#14-alignment-rlhf--dpo--grpo)
+15. [Inference Optimizations](#15-inference-optimizations)
+16. [Model Size Configurations](#16-model-size-configurations)
+17. [Full Forward Pass — Text and Vision](#17-full-forward-pass--text-and-vision)
+18. [Implementation Checklist](#18-implementation-checklist)
 
 ---
-
 ## 1. Overview & Philosophy
 
-APEX-1 is a decoder-only transformer that synthesizes the single best innovation from each frontier lab into one coherent design. No component is included without a clear engineering reason.
+APEX-1 is a decoder-only language + vision transformer architecture that synthesizes strong ideas from modern LLMs and multimodal systems into one coherent, educational design. No component is included without a clear engineering reason. Text remains the core path, while images enter through a visual-token bridge that lets the same decoder-only transformer process both modalities.
 
 | Feature | Source model | Why it wins |
 |---|---|---|
@@ -70,6 +55,10 @@ APEX-1 is a decoder-only transformer that synthesizes the single best innovation
 | Process Reward Model | GPT-4o | Step-level reasoning quality signal |
 | RMSNorm pre-norm | Universal (post-2022) | Stable deep training |
 | Flash Attention v3 | All modern models | 3–7× faster attention, same output |
+| `<|img|>` visual-token bridge | LLaVA / Qwen-VL style | Images become context tokens without rewriting the decoder |
+| Native patch vision encoder | ViT | From-scratch educational image encoder |
+| Perceiver visual resampler | Flamingo-style compression | Fixed number of image tokens keeps context efficient |
+| Multimodal SFT loss | Vision instruction tuning | Trains image + prompt → assistant answer when GPU/data are available |
 
 ### Design Principles
 
@@ -77,8 +66,9 @@ APEX-1 is a decoder-only transformer that synthesizes the single best innovation
 1. EFFICIENCY FIRST   — Active parameters << Total parameters (MoE)
 2. CONTEXT FIRST      — Native 128k, extendable to 1M+ via YaRN
 3. REASONING FIRST    — Built-in chain-of-thought scratchpad
-4. SAFETY FIRST       — Constitutional AI + GRPO baked into training
-5. OPEN BY DEFAULT    — Architecture fully specified and reproducible
+4. MULTIMODAL FIRST  — Images become visual tokens inside the same context
+5. SAFETY FIRST       — Constitutional AI + GRPO baked into training
+6. OPEN BY DEFAULT    — Architecture fully specified and reproducible
 ```
 
 ---
@@ -126,7 +116,7 @@ Taken from Qwen3's tokenizer — the largest among major open models. Larger voc
 <|thinking|>           — Start of internal reasoning scratchpad
 <|/thinking|>          — End of reasoning scratchpad
 <|pad|>                — Padding token (ID = 0)
-<|img|>                — Image placeholder (for future multimodal)
+<|img|>                — Image placeholder replaced by continuous visual tokens
 ```
 
 ### Chat Template
@@ -173,6 +163,18 @@ We define three sizes. Start with **APEX-1-Small** for testing.
 | Total parameters (approx.) | ~100M | ~7B | ~900B |
 | Active parameters per token | ~40M | ~2B | ~45B |
 
+### Vision Hyperparameters
+
+| Parameter | Tiny Vision | Small Vision | Purpose |
+|---|---:|---:|---|
+| `image_size` | 64 | 224 | Input image resolution |
+| `patch_size` | 16 | 16 | Converts image into patches |
+| `vision_hidden_dim` | 64 | 512 | Vision encoder feature width |
+| `vision_layers` | 2 | 6–12 | Patch encoder depth |
+| `num_visual_tokens` | 4 | 16–64 | Number of tokens inserted at `<|img|>` |
+| `projector_type` | `perceiver` / `mlp` | `perceiver` | Maps image features to `d_model` |
+
+
 > **Why dropout = 0.0?**
 > Modern large models do not use dropout during training. Regularization comes from data diversity, weight decay, and model scale. Dropout consistently hurts large-model performance.
 
@@ -215,10 +217,151 @@ The embedding table weights are **shared** with the final LM head:
 ### No positional embeddings at this stage:
 RoPE is applied **inside each attention layer** on the Q and K vectors.
 The embedding layer handles only token identity.
-
 ---
 
-## 5. Rotary Positional Encoding — RoPE + YaRN
+## 5. Vision Input Pipeline — Image → Visual Tokens
+
+APEX-1 Vision does not turn images into text before the model sees them. Instead, it turns images into **continuous visual tokens** that live in the same hidden space as text token embeddings.
+
+This keeps the language model architecture clean:
+
+```
+Image pixels [batch, 3, H, W]
+        │
+        ▼
+ImagePreprocessor
+        │  normalized tensor
+        ▼
+NativeVisionEncoder
+        │  patch features [batch, n_patches, vision_hidden_dim]
+        ▼
+VisionToTextProjector / PerceiverResampler
+        │  visual tokens [batch, num_visual_tokens, d_model]
+        ▼
+Replace <|img|> token embedding
+        │
+        ▼
+APEX transformer blocks
+        │
+        ▼
+Language logits [batch, seq, vocab]
+```
+
+### 5a. Image Preprocessing
+
+The preprocessor performs the same basic steps used by practical vision-language systems:
+
+1. Load image from path, PIL image, NumPy array, or tensor.
+2. Convert to RGB.
+3. Resize to the configured `image_size`.
+4. Convert to `[3, H, W]`.
+5. Normalize to stable floating-point values.
+
+```python
+class ImagePreprocessor:
+    def __init__(self, image_size=224, mean=(0.5, 0.5, 0.5), std=(0.5, 0.5, 0.5)):
+        self.image_size = image_size
+        self.mean = mean
+        self.std = std
+
+    def __call__(self, image):
+        # Returns torch.FloatTensor [3, image_size, image_size]
+        ...
+```
+
+### 5b. Native Patch-Based Vision Encoder
+
+The educational encoder follows the Vision Transformer idea:
+
+```
+image [B, 3, H, W]
+  → patchify with Conv2d(kernel=patch_size, stride=patch_size)
+  → patch embeddings [B, N, vision_hidden_dim]
+  → add learned 2D/sequence position embedding
+  → small transformer encoder stack
+  → patch features
+```
+
+Why this design is good for APEX-1:
+
+- It is teachable from scratch.
+- It works on CPU for tiny tests.
+- It produces a sequence, not a single vector.
+- It can later be replaced with CLIP, SigLIP, DINOv2, or another pretrained encoder.
+
+```python
+class NativeVisionEncoder(nn.Module):
+    def forward(self, pixel_values):
+        # pixel_values: [batch, 3, image_size, image_size]
+        # returns: [batch, n_patches, vision_hidden_dim]
+        ...
+```
+
+### 5c. Vision-to-Language Projector
+
+The vision encoder output does not automatically match APEX's `d_model`. The projector solves that.
+
+```
+patch features [B, n_patches, vision_hidden_dim]
+        │
+        ▼
+projector / perceiver resampler
+        │
+        ▼
+visual tokens [B, num_visual_tokens, d_model]
+```
+
+Two projector modes are useful:
+
+| Projector | Best for | How it works |
+|---|---|---|
+| MLP projector | Simple demos | Mean/patch features → linear layers → `d_model` |
+| Perceiver resampler | Better multimodal design | Learned query tokens cross-attend to patch features |
+
+The Perceiver-style projector is preferred because it gives a fixed visual-token budget. A large image can have many patches, but the decoder only receives `num_visual_tokens`.
+
+### 5d. Replacing `<|img|>` with Visual Tokens
+
+The tokenizer already contains a special `<|img|>` token. In normal text-only mode, it is just a token ID. In vision mode, it becomes a placeholder.
+
+Example:
+
+```
+Text tokens:
+[BOS, USER, <|img|>, "What", "is", "this", "?"]
+
+After vision insertion:
+[BOS, USER, <visual_1>, <visual_2>, <visual_3>, <visual_4>, "What", "is", "this", "?"]
+```
+
+So the final sequence length becomes:
+
+```
+final_seq_len = text_seq_len - number_of_img_placeholders + num_visual_tokens
+```
+
+Your working demo proves this:
+
+```
+Input text tokens: (1, 7)
+Visual tokens inserted: 4
+Logits: (1, 10, 1000)
+Hidden states: (1, 10, 64)
+KV cache layers: 6
+```
+
+### 5e. Why This Is the Best Course Design
+
+A course project should be runnable and understandable without huge GPUs. This design gives students the complete path:
+
+```
+image → patches → visual tokens → decoder context → language loss
+```
+
+The architecture is complete, but semantic image understanding requires training. Without pretrained weights or vision instruction data, the model can process image tensors but cannot reliably identify objects yet. That is expected and correct for an educational from-scratch architecture.
+
+
+## 6. Rotary Positional Encoding — RoPE + YaRN
 
 RoPE encodes position information without adding anything to the embeddings. Instead, it rotates Query and Key vectors before computing attention scores.
 
@@ -315,7 +458,7 @@ def apply_yarn_scaling(theta, scale_factor, d_head, beta_fast=32, beta_slow=1):
 
 ---
 
-## 6. Transformer Block — Full Stack
+## 7. Transformer Block — Full Stack
 
 ### Architecture overview of one APEX-1 block:
 
@@ -988,7 +1131,7 @@ x = x + FFN(RMSNorm(x))          # or skip, if gate fires
 
 ---
 
-## 7. KV Cache & Memory Optimization
+## 8. KV Cache & Memory Optimization
 
 During inference (generation), the model processes one new token at a time
 but needs all previous K and V vectors for attention.
@@ -1037,7 +1180,7 @@ FP16 → INT4: 4× smaller, ~1% quality loss — best for batch serving
 
 ---
 
-## 8. Long Context Handling
+## 9. Long Context Handling
 
 ### Context length capability per model size:
 
@@ -1072,7 +1215,7 @@ Scale factor = `target_context / training_context`. For 1M on large model: `scal
 
 ---
 
-## 9. Language Model Head
+## 10. Language Model Head
 
 The final projection from hidden states to vocabulary logits.
 
@@ -1119,7 +1262,7 @@ class MultiTokenHead(torch.nn.Module):
 
 ---
 
-## 10. Sampling & Decoding Strategy
+## 11. Sampling & Decoding Strategy
 
 Given logits over 151,643 tokens, how do we pick the next token?
 
@@ -1178,7 +1321,7 @@ Reasoning (think): temperature=0.6, top_p=0.95  ← more exploratory
 
 ---
 
-## 11. Reasoning / Thinking Mode
+## 12. Reasoning / Thinking Mode
 
 Inspired by DeepSeek-R1 and Claude 3.7 Sonnet.
 
@@ -1227,7 +1370,7 @@ for step in generation_loop:
 
 ---
 
-## 12. Training Pipeline — Full Detail
+## 13. Training Pipeline — Full Detail
 
 ### 12a. Phase 1 — Pre-training
 
@@ -1401,7 +1544,60 @@ Load balancing (Section 6j) ensures no expert is permanently starved of gradient
 
 ---
 
-## 13. Alignment: RLHF → DPO → GRPO — Full Detail
+### 13d. Phase 3 — Vision Supervised Fine-Tuning
+
+Vision SFT teaches the model to connect image tokens with assistant text.
+
+Dataset example:
+
+```json
+{
+  "image": "data/images/cat.png",
+  "messages": [
+    {"role": "user", "content": "<|img|>\nWhat is in this image?"},
+    {"role": "assistant", "content": "A cat sitting on the floor."}
+  ]
+}
+```
+
+Training flow:
+
+```python
+batch = vision_dataset[i]
+
+outputs = model(
+    token_ids=batch["input_ids"],
+    images=batch["pixel_values"],
+    labels=batch["labels"],
+)
+
+loss = compute_vision_sft_loss(
+    logits=outputs["logits"],
+    labels=batch["expanded_labels"],
+    ignore_index=-100,
+)
+```
+
+Important label rule:
+
+```
+visual tokens are inputs, not prediction targets
+labels for visual token positions = -100
+```
+
+This prevents the loss from trying to predict fake vocabulary IDs for continuous image embeddings.
+
+Recommended low-cost training order:
+
+1. Freeze the APEX transformer.
+2. Train only the vision encoder + projector.
+3. Unfreeze top language layers if GPU budget allows.
+4. Later replace the native encoder with a frozen pretrained CLIP/SigLIP/DINO-style encoder.
+
+For this course, training is optional. The architecture, forward pass, tests, and loss are complete and CPU-testable.
+
+
+## 14. Alignment: RLHF → DPO → GRPO — Full Detail
 
 After SFT, the model needs to learn nuanced human preferences and reasoning quality beyond what labeled examples can teach.
 
@@ -1736,7 +1932,7 @@ def combined_reward(prompt, response, constitution, prm, answer_checker):
 
 ---
 
-## 14. Inference Optimizations
+## 15. Inference Optimizations
 
 ### Speculative Decoding (using multi-token head):
 ```
@@ -1785,7 +1981,7 @@ Micro-batch pipeline: while GPU 1 computes forward for micro-batch 1,
 
 ---
 
-## 15. Model Size Configurations
+## 16. Model Size Configurations
 
 ### APEX-1-Small (recommended starting point)
 
@@ -1913,7 +2109,68 @@ attention:
 
 ---
 
-## 16. Full Forward Pass — Step by Step
+## 17. Full Forward Pass — Text and Vision
+
+### 17a. Text-Only Forward Pass
+
+The text-only model still works exactly as before:
+
+```
+token_ids
+  → embedding × √d
+  → transformer blocks
+  → final RMSNorm
+  → tied LM head
+  → logits
+```
+
+### 17b. Vision-Language Forward Pass
+
+When images are provided, APEX1VisionModel performs an embedding-level merge before entering the transformer:
+
+```python
+def vision_forward(token_ids, images):
+    text_embeds = embedding(token_ids) * sqrt(d_model)
+
+    image_features = vision_encoder(images)
+    visual_tokens = vision_projector(image_features)
+
+    inputs_embeds = replace_img_token_embeddings(
+        text_embeds=text_embeds,
+        token_ids=token_ids,
+        visual_tokens=visual_tokens,
+        img_token_id=tokenizer.img_token_id,
+    )
+
+    return apex_forward_from_embeddings(inputs_embeds)
+```
+
+Shape example from the CPU demo:
+
+```
+Input text tokens:        [1, 7]
+Visual tokens inserted:   4
+Final sequence length:    7 - 1 + 4 = 10
+Logits:                  [1, 10, vocab]
+Hidden states:           [1, 10, d_model]
+```
+
+### 17c. Why the Decoder Does Not Need to Change
+
+The APEX transformer never needs to know whether a vector came from text or image. After insertion, both are just `d_model` vectors in a single sequence.
+
+That is the central trick behind this multimodal design:
+
+```
+Text tokens  → embedding table ┐
+                              ├→ same decoder-only transformer
+Image pixels → visual tokens  ┘
+```
+
+This makes the model extensible. In the future, audio, video, or 3D scene tokens can enter through the same pattern.
+
+
+### 17d. Original Text Forward Pass — Step by Step
 
 Here is every operation in order for one forward pass through APEX-1-Small.
 
@@ -2055,7 +2312,7 @@ STEP 18: NEXT TOKEN PREDICTION
 
 ---
 
-## 17. Implementation Checklist
+## 18. Implementation Checklist
 
 Use this to track build progress. Recommended order: top to bottom.
 
@@ -2120,6 +2377,22 @@ Use this to track build progress. Recommended order: top to bottom.
 - [ ] Constitutional AI critique loop: model critiques own outputs against principles
 - [ ] Combined reward function: outcome + process + constitutional
 - [ ] GRPO gradient step with clipped surrogate objective
+
+### Vision
+
+- [x] Add `VisionConfig` to `APEXConfig`
+- [x] Add `apex/vision/preprocess.py`
+- [x] Add native patch-based `NativeVisionEncoder`
+- [x] Add `VisionToTextProjector` / Perceiver resampler
+- [x] Add `APEX1VisionModel`
+- [x] Activate `<|img|>` placeholder replacement
+- [x] Add `vision_dataset.py`
+- [x] Add `vision_losses.py`
+- [x] Add `examples/vision_forward_demo.py`
+- [x] Add `examples/vision_chat_demo.py`
+- [x] Add `tests/test_vision.py`
+- [ ] Optional: add GPU/Colab notebook for vision SFT
+- [ ] Optional: add pretrained CLIP/SigLIP encoder adapter
 
 ### Testing
 - [ ] Load Small config (d_model=512, n_layers=12)
