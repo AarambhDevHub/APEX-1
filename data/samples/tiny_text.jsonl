@@ -1,0 +1,3 @@
+{"text":"APEX-1 teaches how modern transformer models are built from scratch."}
+{"text":"A token becomes an embedding, attention mixes context, and the LM head predicts the next token."}
+{"text":"Evaluation helps us check whether a model is learning useful next-token patterns."}
