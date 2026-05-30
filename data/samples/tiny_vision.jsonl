@@ -1,0 +1,2 @@
+{"image":"data/samples/images/example_grid.png","messages":[{"role":"user","content":"<|img|>\nWhat does this image contain?"},{"role":"assistant","content":"A small synthetic image used to test the vision pipeline."}]}
+{"image":"data/samples/images/example_shape.png","messages":[{"role":"user","content":"<|img|>\nDescribe the visual input."},{"role":"assistant","content":"The example is a placeholder for a tiny vision-language training record."}]}

@@ -373,12 +373,62 @@ KV cache layers: 6
 
 ---
 
+## 🧪 Evaluation, Benchmarking & Inspection — v2.4.0
+
+APEX-1 now includes a small educational evaluation and benchmarking toolkit.
+
+This helps learners answer practical model-engineering questions:
+
+- How many parameters does my model have?
+- Which layers use global MLA vs local GQA+SW?
+- Which layers use MoE vs dense FFN?
+- How fast is a tiny forward pass?
+- What is the model's next-token perplexity?
+- Are generated texts repetitive?
+- Did the vision forward pass insert the expected number of visual tokens?
+
+New commands:
+
+```bash
+# Inspect parameters and layer types
+python scripts/inspect_model.py
+python scripts/inspect_model.py --vision
+
+# Print an ASCII architecture diagram
+python scripts/print_architecture.py
+python scripts/print_architecture.py --vision
+python scripts/print_architecture.py --table
+
+# Run a tiny CPU benchmark
+python scripts/benchmark.py --batch-size 1 --seq-len 16 --repeats 5
+python scripts/benchmark.py --vision --batch-size 1 --seq-len 16 --repeats 5
+
+# Run new demos
+python examples/eval_demo.py
+python examples/benchmark_demo.py
+python examples/inspect_model_demo.py
+python examples/architecture_diagram_demo.py
+python examples/tiny_dataset_demo.py
+
+# Run the new tests
+pytest tests/test_eval_and_inspector.py -v
+```
+
+---
+
 ## 📁 Project Structure
 
 ```txt
 APEX-1/
 ├── apex/
 │   ├── config.py                 # All hyperparameters — text, training, alignment, vision
+│   │
+│   ├── eval/
+│   │   ├── metrics.py                  # token accuracy + token cross-entropy
+│   │   ├── perplexity.py               # next-token perplexity evaluation
+│   │   ├── generation_quality.py       # distinct-n, repetition, average length
+│   │   ├── vision_eval.py              # vision forward-output validation
+│   │   └── benchmark.py                # tiny forward-pass benchmark helper
 │   │
 │   ├── model/
 │   │   ├── norm.py               # RMSNorm
@@ -417,7 +467,7 @@ APEX-1/
 │   │   ├── dataset.py            # Text dataset classes + DataLoader factories
 │   │   └── vision_dataset.py     # Image-caption / vision-instruction dataset
 │   │
-│   └── utils/                    # Shape checker, FLOPs, param counter
+│   └── utils/                    # Shape checker, FLOPs, param counter, ASCII / Markdown architecture map
 │
 ├── configs/
 │   ├── apex1_tiny.yaml           # Tiny text-only config
@@ -448,7 +498,16 @@ APEX-1/
 │
 ├── scripts/
 │   ├── train.py                  # Text training CLI
-│   └── generate.py               # Text generation CLI
+│   ├── generate.py               # Text generation CLI
+│   ├── benchmark.py                # CLI benchmark
+│   ├── inspect_model.py            # CLI model inspector
+│   └── print_architecture.py       # CLI architecture diagram
+│
+├── data/samples/
+│   ├──  tiny_text.jsonl             # text pretraining format example
+│   ├──  tiny_sft.jsonl              # supervised fine-tuning format example
+│   ├──  tiny_preference.jsonl       # preference data format example
+│   └──  tiny_vision.jsonl           # vision instruction format example
 │
 ├── README.md
 ├── CHANGELOG.md
@@ -458,7 +517,8 @@ APEX-1/
 
 ---
 
-## 🧪 What's New in v2.3.0
+
+## 🧪 What's New in v2.4.0
 
 - **Vision capability architecture** — native ViT-style image encoder, vision-to-language projector, and `APEX1VisionModel`.
 - **`<|img|>` is now active** — image placeholders are replaced by continuous visual tokens before the transformer runs.

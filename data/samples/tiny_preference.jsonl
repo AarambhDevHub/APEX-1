@@ -1,0 +1,2 @@
+{"prompt":"Explain RoPE simply.","chosen":"RoPE rotates query and key vectors so attention can understand token positions.","rejected":"RoPE is just a random embedding trick."}
+{"prompt":"Why benchmark a model?","chosen":"Benchmarking shows speed, memory, and throughput so we can compare configs.","rejected":"Benchmarking is not useful for models."}

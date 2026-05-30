@@ -5,6 +5,53 @@ All notable changes to APEX-1 will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.4.0] — Evaluation, Benchmarking, and Model Inspector
+
+### Added
+
+- Added `apex/eval/` package for course-friendly model evaluation:
+  - `metrics.py` for token accuracy and token cross-entropy.
+  - `perplexity.py` for next-token language-model perplexity.
+  - `generation_quality.py` for distinct-n, average length, and repetition checks.
+  - `vision_eval.py` for validating APEX-1 vision forward outputs.
+  - `benchmark.py` for tiny forward-pass benchmark helpers.
+- Added model inspection utilities:
+  - `apex/utils/model_inspector.py`
+  - `scripts/inspect_model.py`
+- Added architecture diagram utilities:
+  - `apex/utils/architecture_diagram.py`
+  - `scripts/print_architecture.py`
+- Added benchmark CLI:
+  - `scripts/benchmark.py`
+- Added mini dataset examples:
+  - `data/samples/tiny_text.jsonl`
+  - `data/samples/tiny_sft.jsonl`
+  - `data/samples/tiny_preference.jsonl`
+  - `data/samples/tiny_vision.jsonl`
+- Added new examples:
+  - `examples/eval_demo.py`
+  - `examples/benchmark_demo.py`
+  - `examples/inspect_model_demo.py`
+  - `examples/architecture_diagram_demo.py`
+  - `examples/tiny_dataset_demo.py`
+- Added `tests/test_eval_and_inspector.py` with 10 new tests.
+- Added `docs/33-evaluation-benchmarking-inspection.md`.
+
+### Changed
+
+- Updated `apex/__init__.py` version to `2.4.0`.
+- README should now describe APEX-1 as a model-building and model-evaluation course.
+- Course count moves from 32 to 33 lessons.
+- Test count moves from 96 to 106 tests after the new evaluation/inspector test file passes.
+
+### Notes
+
+v2.4.0 does not add heavier model architecture. Instead, it makes APEX-1 easier
+to understand, measure, benchmark, inspect, and teach. This is the right next
+step after v2.3.0 vision because learners need to know whether the model is
+working before adding more complex features.
+
+
 ## [2.3.0] — Vision Preview
 
 ### Added

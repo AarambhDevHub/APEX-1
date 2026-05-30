@@ -1,0 +1,2 @@
+{"messages":[{"role":"user","content":"What is RMSNorm?"},{"role":"assistant","content":"RMSNorm normalizes activations using their root mean square and a learned scale."}]}
+{"messages":[{"role":"user","content":"Why do models use KV cache?"},{"role":"assistant","content":"KV cache avoids recomputing old keys and values during autoregressive generation."}]}
