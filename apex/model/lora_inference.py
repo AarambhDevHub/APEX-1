@@ -1,12 +1,12 @@
 """
-APEX-1 LoRA / QLoRA inference loading helpers.
+APEX-1 LoRA / QLoRA / DoRA inference loading helpers.
 
 v2.5.0 added LoRA training and adapter checkpoints.
 v2.6.0 completes the workflow by making adapters usable for generation and
 merge/export flows:
 
-    base checkpoint + LoRA/QLoRA adapter -> generation model
-    base checkpoint + LoRA/QLoRA adapter -> merged plain APEX checkpoint
+    base checkpoint + PEFT adapter -> generation model
+    base checkpoint + PEFT adapter -> merged plain APEX checkpoint
 
 The key implementation detail is load order. A normal base checkpoint uses
 plain linear keys such as:
@@ -23,7 +23,7 @@ So for safe loading we:
 1. temporarily disable PEFT
 2. build the plain base model
 3. load the base checkpoint if provided
-4. re-enable PEFT and inject LoRA or QLoRA wrappers
+4. re-enable PEFT and inject LoRA, QLoRA, DoRA, or QDoRA wrappers
 5. load the adapter-only checkpoint
 """
 
@@ -85,7 +85,7 @@ def build_base_model_then_apply_lora(
         strict_base: Whether to strictly load the base checkpoint.
 
     Returns:
-        A model with LoRA/QLoRA wrappers attached when ``config.peft.enabled`` is true.
+        A model with PEFT wrappers attached when ``config.peft.enabled`` is true.
     """
     target_device = resolve_device(device)
     peft_enabled = bool(config.peft.enabled)
@@ -122,7 +122,7 @@ def load_lora_model_for_inference(
     strict_adapter: bool = False,
     merge_for_runtime: bool = False,
 ) -> LoRAInferenceLoadResult:
-    """Build an inference-ready model and load a LoRA/QLoRA adapter.
+    """Build an inference-ready model and load a PEFT adapter.
 
     Args:
         config: APEX config. LoRA will be enabled automatically.

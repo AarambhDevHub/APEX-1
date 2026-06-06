@@ -4,7 +4,7 @@ Complete APEX-1 Model.
 v2.5.0 adds optional PEFT/LoRA adapter injection; v2.7.0 adds QLoRA-style 4-bit adapter injection. When ``config.peft.enabled``
 is true, selected linear projections are wrapped with ``LoRALinear`` or ``QLoRALinear`` after base
 weight initialization. The base model can be frozen while only adapter weights
-remain trainable.
+remain trainable. v2.8.0 supports DoRA magnitude + direction adapters too.
 """
 
 from __future__ import annotations
@@ -75,7 +75,8 @@ class APEX1Model(nn.Module):
             apply_lora_adapters(self, config.peft)
             peft_stats = peft_parameter_summary(self)
             logger.info(
-                "LoRA/PEFT enabled: trainable=%s / total=%s (%.4f%%)",
+                "PEFT enabled (%s): trainable=%s / total=%s (%.4f%%)",
+                config.peft.method,
                 self._format_params(int(peft_stats["trainable"])),
                 self._format_params(int(peft_stats["total"])),
                 float(peft_stats["trainable_percent"]),

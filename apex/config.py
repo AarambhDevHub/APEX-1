@@ -5,11 +5,11 @@ Defines the complete configuration dataclass for all APEX-1 model sizes,
 loadable from YAML config files. Covers model dimensions, attention settings,
 MoE parameters, skip gate, multi-token prediction, thinking mode, training
 hyperparameters, GRPO alignment settings, optional vision settings, and
-optional PEFT / LoRA / QLoRA fine-tuning settings.
+optional PEFT / LoRA / QLoRA / DoRA fine-tuning settings.
 
 v2.5.0 adds ``PEFTConfig`` so APEX-1 can attach trainable LoRA adapters to a
 frozen base model for efficient supervised fine-tuning. v2.7.0 extends PEFT
-with an educational QLoRA-style 4-bit quantized base model path.
+with an educational QLoRA-style 4-bit quantized base model path. v2.8.0 adds DoRA/QDoRA adapters.
 """
 
 from __future__ import annotations
@@ -136,12 +136,16 @@ class PEFTConfig:
 
     ``method="qlora"`` first quantizes the frozen base projection to an
     educational 4-bit representation, then trains the same LoRA matrices on top.
-    This mirrors the QLoRA learning workflow without requiring external CUDA
-    kernels or the bitsandbytes package.
+
+    ``method="dora"`` uses Weight-Decomposed LoRA: trainable low-rank direction
+    updates plus a trainable per-output magnitude vector.
+
+    ``method="qdora"`` combines the educational 4-bit frozen base with DoRA
+    magnitude/direction adapters.
     """
 
     enabled: bool = False
-    method: str = "lora"  # lora or qlora
+    method: str = "lora"  # lora, qlora, dora, or qdora
     r: int = 8
     alpha: int = 16
     dropout: float = 0.05
@@ -181,7 +185,7 @@ class PEFTConfig:
 
     # none: train only LoRA matrices
     # all: train every bias in the model
-    # lora_only: train biases inside LoRA/QLoRA-wrapped modules only
+    # lora_only: train biases inside LoRA/QLoRA/DoRA-wrapped modules only
     bias: str = "none"
 
 
@@ -351,8 +355,10 @@ class APEXConfig:
                 )
 
         if p.enabled:
-            if p.method not in {"lora", "qlora"}:
-                raise ValueError("Only peft.method='lora' or peft.method='qlora' is implemented in v2.7.0")
+            if p.method not in {"lora", "qlora", "dora", "qdora"}:
+                raise ValueError(
+                    "Only peft.method='lora', 'qlora', 'dora', or 'qdora' is implemented in v2.8.0"
+                )
             if p.r <= 0:
                 raise ValueError("peft.r must be positive")
             if p.alpha <= 0:
@@ -361,9 +367,9 @@ class APEXConfig:
                 raise ValueError("peft.dropout must be in [0.0, 1.0)")
             if p.bias not in {"none", "all", "lora_only"}:
                 raise ValueError("peft.bias must be one of: none, all, lora_only")
-            if p.method == "qlora":
+            if p.method in {"qlora", "qdora"}:
                 if p.quantization_bits != 4:
-                    raise ValueError("v2.7.0 educational QLoRA currently supports only 4-bit quantization")
+                    raise ValueError("v2.8.0 educational QLoRA/QDoRA currently supports only 4-bit quantization")
                 if p.quant_type not in {"nf4", "fp4"}:
                     raise ValueError("peft.quant_type must be one of: nf4, fp4")
                 if p.compute_dtype not in {"float32", "float16", "bfloat16"}:
@@ -631,6 +637,24 @@ def get_tiny_qlora_config() -> APEXConfig:
     cfg.peft.quant_type = "nf4"
     cfg.peft.double_quant = True
     cfg.peft.compute_dtype = "float32"
+    cfg.training.peak_lr = 1e-4
+    cfg.training.max_steps = 20
+    return cfg
+
+
+def get_tiny_dora_config() -> APEXConfig:
+    """Return a tiny CPU-friendly config with DoRA PEFT enabled."""
+    cfg = get_tiny_lora_config()
+    cfg.peft.method = "dora"
+    cfg.training.peak_lr = 1e-4
+    cfg.training.max_steps = 20
+    return cfg
+
+
+def get_tiny_qdora_config() -> APEXConfig:
+    """Return a tiny CPU-friendly config with QDoRA enabled."""
+    cfg = get_tiny_qlora_config()
+    cfg.peft.method = "qdora"
     cfg.training.peak_lr = 1e-4
     cfg.training.max_steps = 20
     return cfg

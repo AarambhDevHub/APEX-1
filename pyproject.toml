@@ -4,8 +4,8 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "apex-1"
-version = "2.7.0"
-description = "APEX-1: A Best-of-All-Worlds Large Language + Vision Model with LoRA/PEFT and QLoRA 4-bit fine-tuning and adapter inference"
+version = "2.8.0"
+description = "APEX-1: A Best-of-All-Worlds Large Language + Vision Model with LoRA, QLoRA, and DoRA PEFT fine-tuning plus adapter inference"
 readme = "README.md"
 license = {text = "Apache-2.0"}
 requires-python = ">=3.10"
@@ -24,6 +24,7 @@ keywords = [
     "nlp",
     "lora",
     "qlora",
+    "dora",
     "peft",
     "4-bit",
     "fine-tuning",
