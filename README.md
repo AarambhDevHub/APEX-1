@@ -2,25 +2,25 @@
 
 # 🔺 APEX-1
 
-### A Best-of-All-Worlds Large Language + Vision Model — v2.6.0
+### A Best-of-All-Worlds Large Language + Vision Model — v2.7.0
 
 [![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](LICENSE)
 [![Python](https://img.shields.io/badge/Python-3.10%2B-green.svg)](https://python.org)
 [![Status](https://img.shields.io/badge/Status-Architecture%20Complete-brightgreen.svg)]()
 [![Tests](https://img.shields.io/badge/Tests-Core%20%2B%20Vision%20%2B%20LoRA-success.svg)]()
-[![Docs](https://img.shields.io/badge/Docs-34%20Guides-orange.svg)](docs/)
+[![Docs](https://img.shields.io/badge/Docs-35%20Guides-orange.svg)](docs/)
 [![Course](https://img.shields.io/badge/Course-Free%20%26%20Open-purple.svg)](docs/00-introduction.md)
-[![PEFT](https://img.shields.io/badge/PEFT-LoRA%20Inference%20%2B%20Merge-red.svg)](docs/34-lora-inference-and-merge.md)
+[![PEFT](https://img.shields.io/badge/PEFT-QLoRA%204bit-red.svg)](docs/35-qlora-4bit-finetuning.md)
 
 **Inspired by:** Claude · GPT-style systems · DeepSeek-V3/R1 · Qwen · Gemma · GLM · KIMI · MiniMax · Llama · LLaVA · Flamingo · ViT · LoRA/PEFT research
 
-*Build a frontier-grade language + vision model from scratch. Understand every line. Fine-tune it efficiently. Load adapters, generate with them, merge them, and export plain checkpoints.*
+*Build a frontier-grade language + vision model from scratch. Understand every line. Fine-tune it efficiently. Train LoRA, load adapters, merge them, and learn QLoRA-style 4-bit fine-tuning.*
 
 ---
 
 ### 🆓 This Course Is Completely Free
 
-Other LLM courses charge **$50–$500+** for content like this. APEX-1 is free and always will be — 34 lessons, 4 math references, 24 bug-fix engineering lessons, full annotated source code, CPU-friendly demos, vision architecture, LoRA/PEFT fine-tuning, adapter inference/merge workflows, and a growing test suite. No paywalls. No sign-ups. Just open source.
+Other LLM courses charge **$50–$500+** for content like this. APEX-1 is free and always will be — 35 lessons, 4 math references, 24 bug-fix engineering lessons, full annotated source code, CPU-friendly demos, vision architecture, LoRA/PEFT fine-tuning, adapter inference/merge workflows, QLoRA-style 4-bit fine-tuning, and a growing test suite. No paywalls. No sign-ups. Just open source.
 
 If this helped you learn, please consider supporting so we can keep building free education:
 
@@ -36,7 +36,7 @@ If this helped you learn, please consider supporting so we can keep building fre
 
 ## 🎓 What Is APEX-1?
 
-APEX-1 is three things at once.
+APEX-1 is four things at once.
 
 **As an architecture**, it is a production-grade decoder-only transformer that synthesizes strong ideas from modern AI systems into one coherent educational model — Multi-Head Latent Attention, Mixture of Experts routing, GQA, sliding-window attention, multi-token prediction, thinking mode, GRPO-style alignment, Constitutional AI, and more.
 
@@ -50,12 +50,67 @@ APEX-1 is three things at once.
 train adapter -> save adapter -> load adapter -> generate -> merge -> unload -> export
 ```
 
-As of **v2.5.0**, APEX-1 includes LoRA/PEFT fine-tuning. As of **v2.6.0**, it also includes adapter inference and merge/export workflows. You can freeze the base model, train only LoRA parameters, save adapter-only checkpoints, load adapters for generation, merge adapters into base weights, unload LoRA wrappers, and export plain APEX checkpoints for deployment-style experiments.
+As of **v2.5.0**, APEX-1 includes LoRA/PEFT fine-tuning. As of **v2.6.0**, it also includes adapter inference and merge/export workflows. As of **v2.7.0**, APEX-1 includes an educational QLoRA-style path with 4-bit quantized frozen base weights plus trainable LoRA adapters. You can freeze the base model, train only LoRA parameters, save adapter-only checkpoints, load adapters for generation, merge adapters into base weights, unload LoRA wrappers, and export plain APEX checkpoints for deployment-style experiments.
 
 > **If you have ever wanted to understand what is really inside a modern LLM — not just the theory but the actual code — this is for you.**
 
 ---
 
+
+## 🚀 What Is New in v2.7.0?
+
+APEX-1 v2.7.0 adds **QLoRA-style 4-bit PEFT fine-tuning from scratch**.
+
+This release teaches how adapter training can be combined with a quantized frozen base model:
+
+```txt
+float base Linear -> 4-bit quantized frozen base -> train LoRA adapters only
+```
+
+| Feature | Status |
+|---|---|
+| NF4-style 4-bit codebook quantization | ✅ Complete |
+| Packed 4-bit weight storage | ✅ Complete |
+| Optional double quantization of row scales | ✅ Complete |
+| `QuantizedLinear4bit` frozen base layer | ✅ Complete |
+| `QLoRALinear` adapter wrapper | ✅ Complete |
+| Automatic QLoRA injection via `peft.method: qlora` | ✅ Complete |
+| QLoRA adapter-only save/load | ✅ Complete |
+| QLoRA merge + unload into plain checkpoint | ✅ Complete |
+| New CLI: `scripts/finetune_qlora.py` | ✅ Complete |
+| New demo: `examples/qlora_finetune_demo.py` | ✅ Complete |
+| New config: `configs/apex1_tiny_qlora.yaml` | ✅ Complete |
+| New tests: `tests/test_qlora.py` | ✅ Complete |
+| New guide: `docs/35-qlora-4bit-finetuning.md` | ✅ Complete |
+| CUDA NF4 kernels / paged optimizers | Future work |
+
+### Why v2.7.0 Matters
+
+LoRA reduces trainable parameters. QLoRA reduces base-model memory too by keeping the frozen base in 4-bit quantized form while training only adapters.
+
+You can now run:
+
+```bash
+python examples/qlora_finetune_demo.py
+```
+
+Or fine-tune with a tiny CPU-friendly config:
+
+```bash
+python scripts/finetune_qlora.py \
+  --config configs/apex1_tiny_qlora.yaml \
+  --data data/samples/tiny_sft.jsonl \
+  --output-dir outputs/qlora-test \
+  --max-steps 10
+```
+
+Run the new tests:
+
+```bash
+pytest tests/test_qlora.py -v
+```
+
+---
 ## 🚀 What Is New in v2.6.0?
 
 APEX-1 v2.6.0 adds **LoRA adapter inference and merge/export workflows**.
@@ -177,6 +232,7 @@ APEX-1 includes an educational PEFT implementation built directly in PyTorch.
 | CPU smoke demo | ✅ Complete |
 | Generate with saved adapter | ✅ Complete |
 | Merge and unload adapters into plain checkpoint | ✅ Complete |
+| QLoRA-style 4-bit quantized base + LoRA adapters | ✅ Complete |
 | Real high-quality fine-tuning | Requires trained base checkpoint + dataset |
 
 Default LoRA target modules include:
@@ -220,14 +276,14 @@ This means the vision pipeline is architecturally complete and fully testable on
 |---|---|
 | **CS / Engineering students** | A hands-on project that covers what university ML courses often skip |
 | **Self-taught developers** | A structured path from "what is a token" to "how does PEFT fine-tuning work" |
-| **ML practitioners** | Deep dives into MLA, MoE, speculative decoding, LoRA, adapter merge/export, and modern alignment techniques |
+| **ML practitioners** | Deep dives into MLA, MoE, speculative decoding, LoRA, QLoRA, adapter merge/export, and modern alignment techniques |
 | **Researchers** | A reproducible educational reference architecture synthesizing modern LLM/VLM components |
-| **YouTube / content learners** | 34 documentation files, each structured like a complete lesson |
+| **YouTube / content learners** | 35 documentation files, each structured like a complete lesson |
 | **Open-source builders** | A codebase designed for reading, modifying, testing, and teaching |
 
 ---
 
-## 📚 The Curriculum — 34 Lessons
+## 📚 The Curriculum — 35 Lessons
 
 Every lesson follows the same five-step format:
 
@@ -317,6 +373,7 @@ Every lesson follows the same five-step format:
 |---|---|---|
 | [33](docs/33-lora-peft-finetuning.md) | LoRA & PEFT Fine-Tuning | Low-rank adapters, frozen base model, adapter checkpoints, merge/unmerge |
 | [34](docs/34-lora-inference-and-merge.md) | LoRA Inference & Merge | Load adapters for generation, merge into base weights, unload wrappers, export plain checkpoints |
+| [35](docs/35-qlora-4bit-finetuning.md) | QLoRA 4-bit Fine-Tuning | NF4-style quantization, double quantization, frozen 4-bit base weights, trainable adapters |
 
 ---
 
@@ -404,6 +461,7 @@ APEX-1 picks strong ideas from modern LLM and VLM systems and turns them into a 
 | LoRA adapters | LoRA / PEFT research | Efficient task adaptation without full fine-tuning |
 | Adapter checkpoints | PEFT workflow | Save small trainable deltas instead of full model copies |
 | Adapter merge/export | Deployment-style PEFT workflow | Convert adapter form into plain model checkpoints |
+| QLoRA 4-bit adapters | QLoRA research | Keep frozen base weights quantized while training adapters |
 
 ```txt
 Text tokens [batch, seq_len]
@@ -497,6 +555,8 @@ For PEFT lessons, start with **APEX-1-Tiny-LoRA** (`configs/apex1_tiny_lora.yaml
 
 For LoRA inference/merge lessons, use **APEX-1-Tiny-LoRA-Inference** (`configs/apex1_tiny_lora_inference.yaml`) or the normal LoRA config.
 
+For QLoRA lessons, use **APEX-1-Tiny-QLoRA** (`configs/apex1_tiny_qlora.yaml`).
+
 ---
 
 ## 🚀 Quick Start
@@ -532,9 +592,13 @@ python examples/lora_finetune_demo.py
 # Try LoRA adapter generation smoke demo
 python examples/lora_generation_demo.py
 
+# Try QLoRA / 4-bit PEFT smoke demo
+python examples/qlora_finetune_demo.py
+
 # Run LoRA tests
 pytest tests/test_lora_peft.py -v
 pytest tests/test_lora_inference.py -v
+pytest tests/test_qlora.py -v
 
 # Run vision tests
 pytest tests/test_vision.py -v
@@ -589,6 +653,7 @@ This helps learners answer practical model-engineering questions:
 - How many parameters are trainable after LoRA injection?
 - Does a saved LoRA adapter load and generate correctly?
 - Does a merged LoRA checkpoint match adapter-form inference?
+- How much storage does a QLoRA quantized base layer save?
 
 Commands:
 
@@ -798,6 +863,81 @@ pytest tests/test_lora_inference.py -v
 
 ---
 
+
+## 🧊 QLoRA 4-bit Fine-Tuning — v2.7.0
+
+### 1. Use the QLoRA config
+
+```yaml
+# configs/apex1_tiny_qlora.yaml
+peft:
+  enabled: true
+  method: qlora
+  r: 4
+  alpha: 8
+  dropout: 0.0
+  freeze_base_model: true
+  quantization_bits: 4
+  quant_type: nf4
+  double_quant: true
+  compute_dtype: float32
+```
+
+### 2. Run the CPU QLoRA demo
+
+```bash
+python examples/qlora_finetune_demo.py
+```
+
+This verifies:
+
+- base model construction
+- 4-bit quantized base linear layers
+- QLoRA adapter injection
+- frozen quantized base parameters
+- trainable adapter parameters
+- one optimization step
+- adapter-only checkpoint save
+- merge + unload into plain model form
+
+### 3. Fine-tune with the QLoRA CLI
+
+```bash
+python scripts/finetune_qlora.py \
+  --config configs/apex1_tiny_qlora.yaml \
+  --data data/samples/tiny_sft.jsonl \
+  --output-dir outputs/qlora-test \
+  --max-steps 20
+```
+
+Dry-run with synthetic data:
+
+```bash
+python scripts/finetune_qlora.py \
+  --config configs/apex1_tiny_qlora.yaml \
+  --dry-run \
+  --max-steps 5
+```
+
+### 4. Generate or merge with existing adapter tools
+
+The v2.6.0 inference tools also work with QLoRA configs:
+
+```bash
+python scripts/generate_with_lora.py \
+  --config configs/apex1_tiny_qlora.yaml \
+  --adapter outputs/qlora-test/adapter_final.pt \
+  --prompt "Explain Rust ownership simply"
+
+python scripts/merge_lora.py \
+  --config configs/apex1_tiny_qlora.yaml \
+  --adapter outputs/qlora-test/adapter_final.pt \
+  --output outputs/merged-apex-qlora.pt
+```
+
+> **Educational note:** this implementation includes NF4-style quantization and double quantization, but not CUDA kernels or paged optimizers. It is designed for learning and CPU tests.
+
+---
 ## 📁 Project Structure
 
 ```txt
@@ -823,7 +963,7 @@ APEX-1/
 │   │   ├── load_balancer.py      # Auxiliary-loss-free balancer
 │   │   ├── multi_token_head.py   # Speculative prediction heads
 │   │   ├── block.py              # One complete transformer block
-│   │   ├── lora.py               # LoRA layers, injection, save/load, merge/unmerge
+│   │   ├── lora.py               # LoRA + QLoRA layers, 4-bit quantization, save/load, merge/unmerge
 │   │   ├── lora_inference.py     # Load adapters, merge, unload, export plain checkpoints
 │   │   ├── apex_model.py         # Complete text-only APEX-1 model + PEFT support
 │   │   └── apex_vision_model.py  # Multimodal APEX-1 model: text + image tokens
@@ -863,7 +1003,9 @@ APEX-1/
 │   ├── apex1_large.yaml                # Large text-only config
 │   ├── apex1_tiny_vision.yaml          # Tiny multimodal config
 │   ├── apex1_tiny_lora.yaml            # Tiny LoRA / PEFT config
-│   └── apex1_tiny_lora_inference.yaml  # Tiny LoRA inference/merge config
+│   ├── apex1_tiny_lora_inference.yaml  # Tiny LoRA inference/merge config
+│   ├── apex1_tiny_qlora.yaml           # Tiny QLoRA / 4-bit PEFT config
+│   └── apex1_tiny_qlora_inference.yaml # Tiny QLoRA inference/merge config
 │
 ├── docs/
 │   ├── 00-introduction.md
@@ -872,6 +1014,7 @@ APEX-1/
 │   ├── 32-vision-capabilities.md
 │   ├── 33-lora-peft-finetuning.md
 │   ├── 34-lora-inference-and-merge.md
+│   ├── 35-qlora-4bit-finetuning.md
 │   └── APEX-1-Mathematical-Reference-Part*.md
 │
 ├── tests/
@@ -880,7 +1023,8 @@ APEX-1/
 │   ├── test_vision.py            # Vision config, encoder, projector, model, loss tests
 │   ├── test_eval_and_inspector.py# Evaluation, benchmark, inspector tests
 │   ├── test_lora_peft.py         # LoRA / PEFT training tests
-│   └── test_lora_inference.py    # LoRA adapter inference + merge/export tests
+│   ├── test_lora_inference.py    # LoRA adapter inference + merge/export tests
+│   └── test_qlora.py             # QLoRA 4-bit adapter tests
 │
 ├── examples/
 │   ├── forward_pass_demo.py      # Text forward-pass demo
@@ -895,7 +1039,8 @@ APEX-1/
 │   ├── architecture_diagram_demo.py
 │   ├── tiny_dataset_demo.py
 │   ├── lora_finetune_demo.py     # LoRA / PEFT CPU smoke demo
-│   └── lora_generation_demo.py   # LoRA adapter generation + merge demo
+│   ├── lora_generation_demo.py   # LoRA adapter generation + merge demo
+│   └── qlora_finetune_demo.py    # QLoRA 4-bit PEFT CPU smoke demo
 │
 ├── scripts/
 │   ├── train.py                  # Text training CLI
@@ -905,7 +1050,8 @@ APEX-1/
 │   ├── print_architecture.py     # CLI architecture diagram
 │   ├── finetune_lora.py          # LoRA / PEFT fine-tuning CLI
 │   ├── generate_with_lora.py     # Generate with saved LoRA adapter
-│   └── merge_lora.py             # Merge adapter and export plain checkpoint
+│   ├── merge_lora.py             # Merge adapter and export plain checkpoint
+│   └── finetune_qlora.py         # QLoRA / 4-bit PEFT fine-tuning CLI
 │
 ├── data/samples/
 │   ├── tiny_text.jsonl           # Text pretraining format example
@@ -922,6 +1068,21 @@ APEX-1/
 ---
 
 ## 🧪 What's New by Version
+
+
+### v2.7.0 — QLoRA 4-bit PEFT Fine-Tuning
+
+- **QLoRA-style adapters** — `QLoRALinear` wraps targeted projections with a frozen 4-bit base plus trainable LoRA matrices.
+- **NF4-style quantization** — educational 16-value codebook with more resolution near zero.
+- **Packed 4-bit storage** — two 4-bit codes stored in one uint8 byte.
+- **Double quantization** — optional uint8 quantization of row scales.
+- **QuantizedLinear4bit** — frozen base layer that dequantizes on forward.
+- **QLoRA merge/export** — dequantize, add adapter delta, unload wrapper, and save a plain checkpoint.
+- **New CLI** — `scripts/finetune_qlora.py`.
+- **New CPU demo** — `examples/qlora_finetune_demo.py`.
+- **New config** — `configs/apex1_tiny_qlora.yaml`.
+- **New tests** — `tests/test_qlora.py`.
+- **New guide** — `docs/35-qlora-4bit-finetuning.md`.
 
 ### v2.6.0 — LoRA Adapter Inference & Merge
 
@@ -986,6 +1147,9 @@ Read [docs/32-vision-capabilities.md](docs/32-vision-capabilities.md). It explai
 **If you want to understand efficient fine-tuning:**  
 Read [docs/33-lora-peft-finetuning.md](docs/33-lora-peft-finetuning.md). It explains LoRA math, adapter injection, frozen-base training, adapter checkpoints, and merge/unmerge.
 
+**If you want to understand QLoRA / quantized-base adapter training:**  
+Read [docs/35-qlora-4bit-finetuning.md](docs/35-qlora-4bit-finetuning.md). It explains NF4-style quantization, packed 4-bit weights, double quantization, and frozen quantized base training.
+
 **If you want to understand adapter inference and export:**  
 Read [docs/34-lora-inference-and-merge.md](docs/34-lora-inference-and-merge.md). It explains how to load saved adapters, generate with them, merge them into base weights, unload wrappers, and save plain checkpoints.
 
@@ -1013,6 +1177,9 @@ pytest tests/test_lora_peft.py -v
 # LoRA inference / merge tests
 pytest tests/test_lora_inference.py -v
 
+# QLoRA 4-bit PEFT tests
+pytest tests/test_qlora.py -v
+
 # Everything
 pytest tests/ -v
 ```
@@ -1029,7 +1196,7 @@ Key areas where contributions help:
 - Small pretrained educational checkpoints
 - Additional test coverage for alignment modules
 - Additional LoRA/PEFT examples
-- Adapter inference, merge, and deployment examples
+- Adapter inference, merge, QLoRA, and deployment examples
 - CPU-friendly vision examples, datasets, and training notebooks
 - Translations of documentation to other languages
 - Bug reports and fixes
@@ -1064,7 +1231,7 @@ APEX-1 stands on the shoulders of giants. Architectural and educational inspirat
 - **MiniMax** — efficient MoE design inspiration
 - **Meta / Llama** — GQA, SwiGLU, and practical transformer engineering inspiration
 - **LLaVA / Flamingo / Qwen-VL research** — visual-token bridge and multimodal instruction-tuning pattern
-- **LoRA / PEFT research community** — efficient low-rank adaptation, adapter fine-tuning, and adapter merge/export workflows
+- **LoRA / PEFT research community** — efficient low-rank adaptation, adapter fine-tuning, QLoRA-style quantized PEFT, and adapter merge/export workflows
 
 ---
 
@@ -1100,6 +1267,6 @@ Free to use, modify, and distribute with attribution.
 
 *Built with ❤️ by Aarambh Dev Hub — Teaching AI from the ground up.*
 
-**[Start Learning →](docs/00-introduction.md)** · **[Learn Vision →](docs/32-vision-capabilities.md)** · **[Learn LoRA/PEFT →](docs/33-lora-peft-finetuning.md)** · **[Learn LoRA Inference →](docs/34-lora-inference-and-merge.md)**
+**[Start Learning →](docs/00-introduction.md)** · **[Learn Vision →](docs/32-vision-capabilities.md)** · **[Learn LoRA/PEFT →](docs/33-lora-peft-finetuning.md)** · **[Learn LoRA Inference →](docs/34-lora-inference-and-merge.md)** · **[Learn QLoRA →](docs/35-qlora-4bit-finetuning.md)**
 
 </div>

@@ -5,6 +5,81 @@ All notable changes to APEX-1 will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## v2.7.0 — QLoRA 4-bit PEFT Fine-Tuning
+
+APEX-1 v2.7.0 adds an educational QLoRA-style 4-bit fine-tuning workflow.
+
+v2.5.0 added LoRA training. v2.6.0 added adapter inference and merge/export.
+v2.7.0 now adds quantized-base adapter fine-tuning:
+
+```txt
+frozen 4-bit base weights + trainable LoRA adapters
+```
+
+### Added
+
+- `QuantizedLinear4bit` for frozen 4-bit base projection storage.
+- NF4-style 16-value codebook quantization.
+- Packed 4-bit indices: two 4-bit values per `uint8` byte.
+- Optional double quantization for row scales.
+- `QLoRALinear` wrapper: quantized frozen base + trainable LoRA matrices.
+- Automatic QLoRA injection through `peft.method: qlora`.
+- QLoRA adapter-only checkpoint save/load using existing adapter format.
+- QLoRA merge + unload into plain `nn.Linear` modules.
+- QLoRA storage summary helper.
+- `configs/apex1_tiny_qlora.yaml`.
+- `configs/apex1_tiny_qlora_inference.yaml`.
+- `scripts/finetune_qlora.py`.
+- `examples/qlora_finetune_demo.py`.
+- `tests/test_qlora.py`.
+- `docs/35-qlora-4bit-finetuning.md`.
+
+### Updated
+
+- `apex/config.py`
+  - Added QLoRA config fields to `PEFTConfig`.
+  - Added validation for `method`, `quantization_bits`, `quant_type`, and `compute_dtype`.
+  - Added `get_tiny_qlora_config()` preset.
+- `apex/model/lora.py`
+  - Extended LoRA system to support QLoRA modules.
+  - Added 4-bit quantization helpers.
+  - Updated merge/unload to support both LoRA and QLoRA.
+- `apex/__init__.py`
+  - Bumped version to `2.7.0`.
+- `pyproject.toml`
+  - Bumped project version to `2.7.0`.
+  - Added QLoRA keywords.
+- `README.md`
+  - Added v2.7.0 feature overview, commands, project structure, and learning path.
+
+### Verification Commands
+
+```bash
+pytest tests/test_lora_peft.py -v
+pytest tests/test_lora_inference.py -v
+pytest tests/test_qlora.py -v
+python examples/qlora_finetune_demo.py
+python scripts/finetune_qlora.py \
+  --config configs/apex1_tiny_qlora.yaml \
+  --data data/samples/tiny_sft.jsonl \
+  --output-dir outputs/qlora-test \
+  --max-steps 10
+python scripts/generate_with_lora.py \
+  --config configs/apex1_tiny_qlora.yaml \
+  --adapter outputs/qlora-test/adapter_final.pt \
+  --prompt "Explain Rust ownership simply" \
+  --max-tokens 64
+python scripts/merge_lora.py \
+  --config configs/apex1_tiny_qlora.yaml \
+  --adapter outputs/qlora-test/adapter_final.pt \
+  --output outputs/merged-apex-qlora.pt
+```
+
+### Notes
+
+This is an educational implementation. It intentionally does not include custom
+CUDA kernels, bitsandbytes integration, or paged optimizers yet.
+
 ## v2.6.0 — LoRA Adapter Inference & Merge
 
 APEX-1 v2.6.0 completes the LoRA/PEFT workflow started in v2.5.0.
