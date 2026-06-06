@@ -5,10 +5,11 @@ Defines the complete configuration dataclass for all APEX-1 model sizes,
 loadable from YAML config files. Covers model dimensions, attention settings,
 MoE parameters, skip gate, multi-token prediction, thinking mode, training
 hyperparameters, GRPO alignment settings, optional vision settings, and
-optional PEFT / LoRA fine-tuning settings.
+optional PEFT / LoRA / QLoRA fine-tuning settings.
 
 v2.5.0 adds ``PEFTConfig`` so APEX-1 can attach trainable LoRA adapters to a
-frozen base model for efficient supervised fine-tuning.
+frozen base model for efficient supervised fine-tuning. v2.7.0 extends PEFT
+with an educational QLoRA-style 4-bit quantized base model path.
 """
 
 from __future__ import annotations
@@ -130,18 +131,27 @@ class VisionConfig:
 class PEFTConfig:
     """Parameter-efficient fine-tuning configuration.
 
-    LoRA replaces selected ``nn.Linear`` modules with a frozen base projection
-    plus two small trainable low-rank matrices. This lets a learner fine-tune
-    APEX-1 on instruction data while updating only a tiny percentage of the
-    parameters.
+    ``method="lora"`` wraps selected ``nn.Linear`` modules with a frozen base
+    projection plus trainable low-rank matrices.
+
+    ``method="qlora"`` first quantizes the frozen base projection to an
+    educational 4-bit representation, then trains the same LoRA matrices on top.
+    This mirrors the QLoRA learning workflow without requiring external CUDA
+    kernels or the bitsandbytes package.
     """
 
     enabled: bool = False
-    method: str = "lora"
+    method: str = "lora"  # lora or qlora
     r: int = 8
     alpha: int = 16
     dropout: float = 0.05
     freeze_base_model: bool = True
+
+    # QLoRA / quantized-base settings. Used when method == "qlora".
+    quantization_bits: int = 4
+    quant_type: str = "nf4"  # nf4 or fp4
+    double_quant: bool = True
+    compute_dtype: str = "float32"  # float32, float16, bfloat16
 
     # Match child module names. These names cover APEX attention, MLA, GQA,
     # SwiGLU FFN, MoE experts, and MoE router.
@@ -171,7 +181,7 @@ class PEFTConfig:
 
     # none: train only LoRA matrices
     # all: train every bias in the model
-    # lora_only: train biases inside LoRA-wrapped modules only
+    # lora_only: train biases inside LoRA/QLoRA-wrapped modules only
     bias: str = "none"
 
 
@@ -341,8 +351,8 @@ class APEXConfig:
                 )
 
         if p.enabled:
-            if p.method != "lora":
-                raise ValueError("Only peft.method='lora' is implemented in v2.6.0")
+            if p.method not in {"lora", "qlora"}:
+                raise ValueError("Only peft.method='lora' or peft.method='qlora' is implemented in v2.7.0")
             if p.r <= 0:
                 raise ValueError("peft.r must be positive")
             if p.alpha <= 0:
@@ -351,6 +361,13 @@ class APEXConfig:
                 raise ValueError("peft.dropout must be in [0.0, 1.0)")
             if p.bias not in {"none", "all", "lora_only"}:
                 raise ValueError("peft.bias must be one of: none, all, lora_only")
+            if p.method == "qlora":
+                if p.quantization_bits != 4:
+                    raise ValueError("v2.7.0 educational QLoRA currently supports only 4-bit quantization")
+                if p.quant_type not in {"nf4", "fp4"}:
+                    raise ValueError("peft.quant_type must be one of: nf4, fp4")
+                if p.compute_dtype not in {"float32", "float16", "bfloat16"}:
+                    raise ValueError("peft.compute_dtype must be float32, float16, or bfloat16")
             if not p.target_modules:
                 raise ValueError("peft.target_modules must contain at least one module name")
 
@@ -604,6 +621,19 @@ def get_tiny_lora_config() -> APEXConfig:
     cfg.training.max_steps = 20
     return cfg
 
+
+
+def get_tiny_qlora_config() -> APEXConfig:
+    """Return a tiny CPU-friendly config with QLoRA-style 4-bit PEFT enabled."""
+    cfg = get_tiny_lora_config()
+    cfg.peft.method = "qlora"
+    cfg.peft.quantization_bits = 4
+    cfg.peft.quant_type = "nf4"
+    cfg.peft.double_quant = True
+    cfg.peft.compute_dtype = "float32"
+    cfg.training.peak_lr = 1e-4
+    cfg.training.max_steps = 20
+    return cfg
 
 def get_tiny_vision_config() -> APEXConfig:
     """Return a tiny CPU-friendly config with vision enabled."""

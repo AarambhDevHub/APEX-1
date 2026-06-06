@@ -76,3 +76,12 @@ Thumbs.db
 *.tmp
 *.bak
 scratch/
+
+
+outputs/
+runs/
+checkpoints/
+adapters/
+*.pt
+*.pth
+*.ckpt

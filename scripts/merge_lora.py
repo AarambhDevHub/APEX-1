@@ -1,7 +1,7 @@
 """
-APEX-1 LoRA Merge CLI.
+APEX-1 LoRA/QLoRA Merge CLI.
 
-v2.6.0 feature: merge a trained LoRA adapter into the base model and save a
+v2.6.0 feature: merge a trained LoRA/QLoRA adapter into the base model and save a
 normal APEX checkpoint for deployment-style inference.
 
 Example:
@@ -54,16 +54,16 @@ logger = logging.getLogger(__name__)
 
 
 def parse_args() -> argparse.Namespace:
-    parser = argparse.ArgumentParser(description="Merge an APEX-1 LoRA adapter into base weights")
+    parser = argparse.ArgumentParser(description="Merge an APEX-1 LoRA/QLoRA adapter into base weights")
     parser.add_argument("--config", type=str, required=True, help="APEX YAML config path")
-    parser.add_argument("--adapter", type=str, required=True, help="LoRA adapter checkpoint path")
+    parser.add_argument("--adapter", type=str, required=True, help="LoRA/QLoRA adapter checkpoint path")
     parser.add_argument("--checkpoint", type=str, default=None, help="Optional base checkpoint")
     parser.add_argument("--output", type=str, required=True, help="Merged checkpoint output path")
     parser.add_argument("--device", type=str, default=None, help="Device: cpu, cuda, cuda:0")
     parser.add_argument(
         "--keep-lora-wrappers",
         action="store_true",
-        help="Merge weights but keep LoRA wrapper modules in the saved checkpoint",
+        help="Merge weights but keep LoRA/QLoRA wrapper modules in the saved checkpoint",
     )
     parser.add_argument(
         "--strict-base",
@@ -129,13 +129,13 @@ def main() -> None:
     )
 
     print("\n" + "=" * 70)
-    print("APEX-1 LoRA Merge Complete")
+    print("APEX-1 LoRA/QLoRA Merge Complete")
     print("=" * 70)
     print(f"Adapter: {adapter_path}")
     print(f"Base checkpoint: {args.checkpoint or 'random/base config weights'}")
-    print(f"LoRA modules before merge: {before}")
-    print(f"LoRA modules after merge:  {after}")
-    print(f"Contains LoRA wrappers:    {contains_wrappers}")
+    print(f"LoRA/QLoRA modules before merge: {before}")
+    print(f"LoRA/QLoRA modules after merge:  {after}")
+    print(f"Contains LoRA/QLoRA wrappers:    {contains_wrappers}")
     print(f"Saved merged checkpoint:   {output_path}")
     print("=" * 70 + "\n")
 

@@ -11,5 +11,5 @@ benchmarking utilities, LoRA/PEFT fine-tuning adapters, and LoRA adapter inferen
 Copyright 2024-2026 Aarambh Dev Hub. Licensed under Apache 2.0.
 """
 
-__version__ = "2.6.0"
+__version__ = "2.7.0"
 __author__ = "Aarambh Dev Hub"

@@ -1,7 +1,7 @@
 """
-APEX-1 LoRA Adapter Generation CLI.
+APEX-1 LoRA/QLoRA Adapter Generation CLI.
 
-v2.6.0 feature: generate text with a trained LoRA adapter.
+v2.6.0 feature: generate text with a trained LoRA/QLoRA adapter.
 
 Examples:
 
@@ -52,9 +52,9 @@ logger = logging.getLogger(__name__)
 
 
 def parse_args() -> argparse.Namespace:
-    parser = argparse.ArgumentParser(description="Generate text with an APEX-1 LoRA adapter")
+    parser = argparse.ArgumentParser(description="Generate text with an APEX-1 LoRA/QLoRA adapter")
     parser.add_argument("--config", type=str, required=True, help="APEX YAML config path")
-    parser.add_argument("--adapter", type=str, required=True, help="LoRA adapter checkpoint path")
+    parser.add_argument("--adapter", type=str, required=True, help="LoRA/QLoRA adapter checkpoint path")
     parser.add_argument("--checkpoint", type=str, default=None, help="Optional base model checkpoint")
     parser.add_argument("--tokenizer", type=str, default=None, help="Optional tokenizer.json path")
     parser.add_argument("--prompt", type=str, default="Once upon a time", help="Prompt text")
@@ -68,7 +68,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument(
         "--merge-before-generate",
         action="store_true",
-        help="Merge LoRA weights into wrapped base layers before generation",
+        help="Merge LoRA/QLoRA weights into wrapped base layers before generation",
     )
     parser.add_argument(
         "--no-summary",
@@ -112,7 +112,7 @@ def main() -> None:
     device = result.device
 
     logger.info(
-        "LoRA inference ready: modules=%d, merged_for_runtime=%s, adapter_version=%s",
+        "LoRA/QLoRA inference ready: modules=%d, merged_for_runtime=%s, adapter_version=%s",
         result.lora_modules,
         result.merged_for_runtime,
         result.adapter_info.get("version", "unknown"),
@@ -146,7 +146,7 @@ def main() -> None:
     generated_text = tokenizer.decode(output.token_ids)
 
     print("\n" + "=" * 70)
-    print("APEX-1 LoRA Generation")
+    print("APEX-1 LoRA/QLoRA Generation")
     print("=" * 70)
     print(f"Prompt:\n{args.prompt}\n")
     print(f"Generated ({output.total_tokens} tokens):\n")

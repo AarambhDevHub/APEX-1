@@ -1,8 +1,8 @@
 """
 Complete APEX-1 Model.
 
-v2.5.0 adds optional PEFT/LoRA adapter injection. When ``config.peft.enabled``
-is true, selected linear projections are wrapped with ``LoRALinear`` after base
+v2.5.0 adds optional PEFT/LoRA adapter injection; v2.7.0 adds QLoRA-style 4-bit adapter injection. When ``config.peft.enabled``
+is true, selected linear projections are wrapped with ``LoRALinear`` or ``QLoRALinear`` after base
 weight initialization. The base model can be frozen while only adapter weights
 remain trainable.
 """
