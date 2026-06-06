@@ -1,12 +1,12 @@
 """
-PEFT / LoRA fine-tuning trainer for APEX-1.
+PEFT fine-tuning trainer for APEX-1.
 
 This trainer is intentionally separate from the normal SFT trainer so learners
 can see the PEFT workflow clearly:
 
 1. Load/freeze base model
-2. Inject LoRA adapters
-3. Train only adapter matrices
+2. Inject PEFT adapters
+3. Train only adapter parameters
 4. Save adapter-only checkpoint
 """
 
@@ -34,7 +34,7 @@ logger = logging.getLogger(__name__)
 
 
 class PEFTSFTTrainer:
-    """Supervised fine-tuning trainer for LoRA/PEFT adapters."""
+    """Supervised fine-tuning trainer for PEFT adapters."""
 
     def __init__(
         self,
@@ -101,7 +101,7 @@ class PEFTSFTTrainer:
         log_interval: int = 10,
         wandb_run: Optional[Any] = None,
     ) -> dict[str, float]:
-        """Run LoRA SFT training."""
+        """Run PEFT SFT training."""
         max_steps = max_steps or self.config.training.max_steps
         output_dir = Path(output_dir)
         output_dir.mkdir(parents=True, exist_ok=True)
@@ -110,7 +110,7 @@ class PEFTSFTTrainer:
         running_loss = 0.0
         last_loss = 0.0
 
-        logger.info("Starting LoRA/PEFT SFT for %d steps", max_steps)
+        logger.info("Starting PEFT SFT for %d steps", max_steps)
 
         while self.global_step < max_steps:
             for batch in self.train_loader:
@@ -152,7 +152,7 @@ class PEFTSFTTrainer:
                     avg_loss = running_loss / log_interval
                     lr = self.optimizer.param_groups[0]["lr"]
                     logger.info(
-                        "LoRA SFT Step %d/%d | Loss: %.4f | LR: %.2e",
+                        "PEFT SFT Step %d/%d | Loss: %.4f | LR: %.2e",
                         self.global_step,
                         max_steps,
                         avg_loss,
@@ -176,7 +176,7 @@ class PEFTSFTTrainer:
         final_path = output_dir / "adapter_final.pt"
         save_lora_adapters(self.model, final_path, self.config.peft)
 
-        logger.info("LoRA/PEFT SFT complete at step %d", self.global_step)
+        logger.info("PEFT SFT complete at step %d", self.global_step)
         return {
             "final_step": float(self.global_step),
             "final_loss": float(last_loss),

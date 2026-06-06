@@ -5,6 +5,47 @@ All notable changes to APEX-1 will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## # APEX-1 v2.8.0 — DoRA / Weight-Decomposed LoRA
+
+APEX-1 v2.8.0 adds an educational DoRA implementation on top of the existing LoRA, QLoRA, and adapter inference stack.
+
+### Added
+
+- `DoRALinear` adapter layer.
+- `QDoRALinear` optional quantized DoRA experiment.
+- `peft.method: dora` and `peft.method: qdora` support.
+- Trainable `dora_magnitude` parameters.
+- Adapter-only save/load for DoRA magnitude + LoRA A/B direction weights.
+- Merge/unload support for DoRA and QDoRA.
+- `get_tiny_dora_config()` and `get_tiny_qdora_config()`.
+- `configs/apex1_tiny_dora.yaml`.
+- `configs/apex1_tiny_dora_inference.yaml`.
+- `configs/apex1_tiny_qdora.yaml`.
+- `scripts/finetune_dora.py`.
+- `examples/dora_finetune_demo.py`.
+- `tests/test_dora.py`.
+- `docs/36-dora-weight-decomposed-lora.md`.
+
+### Changed
+
+- README updated to v2.8.0.
+- `pyproject.toml` version bumped to `2.8.0`.
+- PEFT summaries now report DoRA module counts.
+- Adapter checkpoint metadata now includes `num_dora_modules`.
+- Inference helpers now describe LoRA/QLoRA/DoRA adapter flows.
+
+### Verify
+
+```bash
+pytest tests/test_lora_peft.py -v
+pytest tests/test_lora_inference.py -v
+pytest tests/test_qlora.py -v
+pytest tests/test_dora.py -v
+python examples/dora_finetune_demo.py
+python scripts/finetune_dora.py   --config configs/apex1_tiny_dora.yaml   --data data/samples/tiny_sft.jsonl   --output-dir outputs/dora-test   --max-steps 10
+```
+
+
 ## v2.7.0 — QLoRA 4-bit PEFT Fine-Tuning
 
 APEX-1 v2.7.0 adds an educational QLoRA-style 4-bit fine-tuning workflow.
