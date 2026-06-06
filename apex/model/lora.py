@@ -879,7 +879,7 @@ def save_lora_adapters(
     method = str(getattr(peft_config, "method", "lora")).lower() if peft_config else "lora"
     payload: dict[str, Any] = {
         "format": "apex_lora_adapter",
-        "version": "2.8.0",
+        "version": "2.9.0",
         "method": method,
         "adapter_state_dict": get_lora_state_dict(model, modules_to_save=modules_to_save),
         "num_lora_modules": count_lora_modules(model),
@@ -990,7 +990,7 @@ def save_merged_lora_checkpoint(
 
     payload: dict[str, Any] = {
         "format": "apex_merged_lora_checkpoint",
-        "version": "2.8.0",
+        "version": "2.9.0",
         "step": 0,
         "epoch": 0,
         "loss": 0.0,

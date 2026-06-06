@@ -9,7 +9,7 @@ optional PEFT / LoRA / QLoRA / DoRA fine-tuning settings.
 
 v2.5.0 adds ``PEFTConfig`` so APEX-1 can attach trainable LoRA adapters to a
 frozen base model for efficient supervised fine-tuning. v2.7.0 extends PEFT
-with an educational QLoRA-style 4-bit quantized base model path. v2.8.0 adds DoRA/QDoRA adapters.
+with an educational QLoRA-style 4-bit quantized base model path. v2.8.0 adds DoRA/QDoRA. v2.9.0 adds adapter-based DPO preference alignment. v2.8.0 adds DoRA/QDoRA adapters.
 """
 
 from __future__ import annotations
@@ -189,6 +189,31 @@ class PEFTConfig:
     bias: str = "none"
 
 
+
+@dataclass
+class AdapterDPOConfig:
+    """Adapter-based Direct Preference Optimization configuration.
+
+    DPO trains a policy model directly from preference pairs:
+
+        prompt + chosen response
+        prompt + rejected response
+
+    Instead of training a full model, APEX-1 v2.9.0 can train only PEFT adapter
+    parameters while keeping the base model frozen. The reference model stays
+    frozen and adapter-free by default.
+    """
+
+    enabled: bool = False
+    beta: float = 0.1
+    label_smoothing: float = 0.0
+    reference_free: bool = False
+    length_normalize: bool = False
+    max_prompt_len: int = 128
+    max_response_len: int = 128
+    save_every_steps: int = 0
+
+
 @dataclass
 class TrainingConfig:
     """Training hyperparameters."""
@@ -234,6 +259,7 @@ class APEXConfig:
     peft: PEFTConfig = field(default_factory=PEFTConfig)
     training: TrainingConfig = field(default_factory=TrainingConfig)
     grpo: GRPOConfig = field(default_factory=GRPOConfig)
+    adapter_dpo: AdapterDPOConfig = field(default_factory=AdapterDPOConfig)
 
     @classmethod
     def from_yaml(cls, path: str | Path) -> "APEXConfig":
@@ -270,6 +296,8 @@ class APEXConfig:
             config.training = _update_dataclass(TrainingConfig, raw["training"])
         if "grpo" in raw:
             config.grpo = _update_dataclass(GRPOConfig, raw["grpo"])
+        if "adapter_dpo" in raw:
+            config.adapter_dpo = _update_dataclass(AdapterDPOConfig, raw["adapter_dpo"])
 
         logger.info(
             "Config loaded: d_model=%d, n_layers=%d, n_experts=%d, vision=%s, peft=%s",
@@ -357,7 +385,7 @@ class APEXConfig:
         if p.enabled:
             if p.method not in {"lora", "qlora", "dora", "qdora"}:
                 raise ValueError(
-                    "Only peft.method='lora', 'qlora', 'dora', or 'qdora' is implemented in v2.8.0"
+                    "Only peft.method='lora', 'qlora', 'dora', or 'qdora' is implemented in v2.9.0"
                 )
             if p.r <= 0:
                 raise ValueError("peft.r must be positive")
@@ -376,6 +404,20 @@ class APEXConfig:
                     raise ValueError("peft.compute_dtype must be float32, float16, or bfloat16")
             if not p.target_modules:
                 raise ValueError("peft.target_modules must contain at least one module name")
+
+
+        dpo = self.adapter_dpo
+        if dpo.enabled:
+            if not p.enabled:
+                raise ValueError("adapter_dpo.enabled=True requires peft.enabled=True")
+            if dpo.beta <= 0:
+                raise ValueError("adapter_dpo.beta must be positive")
+            if not 0.0 <= dpo.label_smoothing < 0.5:
+                raise ValueError("adapter_dpo.label_smoothing must be in [0.0, 0.5)")
+            if dpo.max_prompt_len <= 0:
+                raise ValueError("adapter_dpo.max_prompt_len must be positive")
+            if dpo.max_response_len <= 0:
+                raise ValueError("adapter_dpo.max_response_len must be positive")
 
         logger.info("Config validation passed.")
 
@@ -655,6 +697,39 @@ def get_tiny_qdora_config() -> APEXConfig:
     """Return a tiny CPU-friendly config with QDoRA enabled."""
     cfg = get_tiny_qlora_config()
     cfg.peft.method = "qdora"
+    cfg.training.peak_lr = 1e-4
+    cfg.training.max_steps = 20
+    return cfg
+
+
+def get_tiny_adapter_dpo_config(method: str = "lora") -> APEXConfig:
+    """Return a tiny CPU-friendly config for adapter-based DPO alignment.
+
+    Args:
+        method: One of ``lora``, ``qlora``, ``dora``, or ``qdora``.
+    """
+    method = method.lower()
+    if method == "lora":
+        cfg = get_tiny_lora_config()
+    elif method == "qlora":
+        cfg = get_tiny_qlora_config()
+    elif method == "dora":
+        cfg = get_tiny_dora_config()
+    elif method == "qdora":
+        cfg = get_tiny_qdora_config()
+    else:
+        raise ValueError("method must be one of: lora, qlora, dora, qdora")
+
+    cfg.peft.enabled = True
+    cfg.peft.method = method
+    cfg.adapter_dpo.enabled = True
+    cfg.adapter_dpo.beta = 0.1
+    cfg.adapter_dpo.label_smoothing = 0.0
+    cfg.adapter_dpo.reference_free = False
+    cfg.adapter_dpo.length_normalize = False
+    cfg.adapter_dpo.max_prompt_len = 64
+    cfg.adapter_dpo.max_response_len = 64
+    cfg.training.batch_size = 1
     cfg.training.peak_lr = 1e-4
     cfg.training.max_steps = 20
     return cfg

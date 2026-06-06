@@ -1,2 +1,3 @@
-{"prompt":"Explain RoPE simply.","chosen":"RoPE rotates query and key vectors so attention can understand token positions.","rejected":"RoPE is just a random embedding trick."}
-{"prompt":"Why benchmark a model?","chosen":"Benchmarking shows speed, memory, and throughput so we can compare configs.","rejected":"Benchmarking is not useful for models."}
+{"prompt": "Explain Rust ownership simply.", "chosen": "Rust ownership means each value has one owner, and borrowing lets code use it safely.", "rejected": "Rust ownership is random and does not matter."}
+{"prompt": "What is LoRA?", "chosen": "LoRA trains small low-rank adapter matrices while the base model stays frozen.", "rejected": "LoRA means training every model weight from scratch."}
+{"prompt": "What does DPO optimize?", "chosen": "DPO directly optimizes a policy using chosen and rejected response pairs.", "rejected": "DPO always requires online reinforcement learning and a separate reward model."}
