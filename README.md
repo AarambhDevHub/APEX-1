@@ -2,24 +2,25 @@
 
 # 🔺 APEX-1
 
-### A Best-of-All-Worlds Large Language + Vision Model — v2.3.0
+### A Best-of-All-Worlds Large Language + Vision Model — v2.5.0
 
 [![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](LICENSE)
 [![Python](https://img.shields.io/badge/Python-3.10%2B-green.svg)](https://python.org)
 [![Status](https://img.shields.io/badge/Status-Architecture%20Complete-brightgreen.svg)]()
-[![Tests](https://img.shields.io/badge/Tests-96%20Passing-success.svg)]()
-[![Docs](https://img.shields.io/badge/Docs-32%20Guides-orange.svg)](docs/)
+[![Tests](https://img.shields.io/badge/Tests-Core%20%2B%20Vision%20%2B%20LoRA-success.svg)]()
+[![Docs](https://img.shields.io/badge/Docs-33%20Guides-orange.svg)](docs/)
 [![Course](https://img.shields.io/badge/Course-Free%20%26%20Open-purple.svg)](docs/00-introduction.md)
+[![PEFT](https://img.shields.io/badge/PEFT-LoRA%20Fine--Tuning-red.svg)](docs/33-lora-peft-finetuning.md)
 
-**Inspired by:** Claude · GPT-4.5 · DeepSeek-V3/R1 · Qwen3 · Gemma 4 · GLM-4 · KIMI · MiniMax · Llama 3 · LLaVA · Flamingo · ViT
+**Inspired by:** Claude · GPT-4.5 · DeepSeek-V3/R1 · Qwen3 · Gemma · GLM · KIMI · MiniMax · Llama · LLaVA · Flamingo · ViT · LoRA/PEFT research
 
-*Build a frontier-grade language + vision model from scratch. Understand every line.*
+*Build a frontier-grade language + vision model from scratch. Understand every line. Fine-tune it efficiently.*
 
 ---
 
 ### 🆓 This Course Is Completely Free
 
-Other LLM courses charge **$50–$500+** for content like this. APEX-1 is free and always will be — 32 lessons, 4 math references, 24 bug-fix engineering lessons, full annotated source code, and 96 tests. No paywalls. No sign-ups. Just open source.
+Other LLM courses charge **$50–$500+** for content like this. APEX-1 is free and always will be — 33 lessons, 4 math references, 24 bug-fix engineering lessons, full annotated source code, CPU-friendly demos, vision architecture, LoRA/PEFT fine-tuning, and a growing test suite. No paywalls. No sign-ups. Just open source.
 
 If this helped you learn, please consider supporting so we can keep building free education:
 
@@ -35,16 +36,93 @@ If this helped you learn, please consider supporting so we can keep building fre
 
 ## 🎓 What Is APEX-1?
 
-APEX-1 is two things at once.
+APEX-1 is three things at once.
 
-**As an architecture**, it is a production-grade decoder-only transformer that synthesizes the single best innovation from each major AI lab into one coherent design — Multi-Head Latent Attention from DeepSeek, Mixture of Experts routing, GRPO alignment from DeepSeek-R1, Constitutional AI from Anthropic, GQA from Llama 3, and more.
+**As an architecture**, it is a production-grade decoder-only transformer that synthesizes strong ideas from modern AI systems into one coherent educational model — Multi-Head Latent Attention, Mixture of Experts routing, GQA, sliding-window attention, multi-token prediction, thinking mode, GRPO-style alignment, Constitutional AI, and more.
 
-**As a course**, it is a complete beginner-to-expert curriculum for understanding how modern large language models actually work — not toy GPT-2 clones, but the real techniques inside frontier models like Claude, GPT-4, and DeepSeek. Every component is fully documented, every design decision is explained, and 24 real bugs are preserved and explained as engineering lessons.
+**As a course**, it is a complete beginner-to-expert curriculum for understanding how modern large language models actually work — not toy GPT-2 clones, but the real techniques behind frontier-style models. Every component is documented, every design decision is explained, and real engineering bugs are preserved as learning material.
 
-**As a vision-language model preview**, APEX-1 can now accept images through the existing `<|img|>` token. Images are encoded into visual tokens, projected into the APEX hidden space, and processed by the same decoder-only transformer context. This is the foundation for image captioning, visual question answering, screenshot understanding, chart understanding, and future multi-image reasoning.
+**As a vision-language model preview**, APEX-1 accepts images through the existing `<|img|>` token. Images are encoded into visual tokens, projected into the APEX hidden space, and processed by the same decoder-only transformer context. This is the foundation for image captioning, visual question answering, screenshot understanding, chart understanding, and future multi-image reasoning.
 
+**As of v2.5.0, APEX-1 also includes LoRA/PEFT fine-tuning.** You can freeze the base model, inject low-rank trainable adapters into attention and feed-forward modules, train only a tiny number of parameters, save adapter-only checkpoints, and merge/unmerge adapters for deployment-style experiments.
 
 > **If you have ever wanted to understand what is really inside a modern LLM — not just the theory but the actual code — this is for you.**
+
+---
+
+## 🚀 What Is New in v2.5.0?
+
+APEX-1 v2.5.0 adds **LoRA + PEFT fine-tuning from scratch**.
+
+This release teaches how modern models are adapted without retraining every parameter.
+
+| Feature | Status |
+|---|---|
+| `PEFTConfig` in `apex/config.py` | ✅ Complete |
+| `LoRALinear` adapter layer | ✅ Complete |
+| Automatic LoRA injection into target modules | ✅ Complete |
+| Freeze-base-model training | ✅ Complete |
+| Trainable parameter summaries | ✅ Complete |
+| Adapter-only save/load | ✅ Complete |
+| Merge and unmerge LoRA weights | ✅ Complete |
+| CPU-friendly LoRA demo | ✅ Complete |
+| LoRA SFT trainer | ✅ Complete |
+| LoRA fine-tuning CLI | ✅ Complete |
+| New docs lesson: `33-lora-peft-finetuning.md` | ✅ Complete |
+| New tests: `tests/test_lora_peft.py` | ✅ Complete |
+
+### Why LoRA Matters
+
+Full fine-tuning updates every model parameter. That is expensive, memory-heavy, and hard to experiment with.
+
+LoRA — **Low-Rank Adaptation** — freezes the original weight matrix and learns a small low-rank update:
+
+```txt
+W' = W + ΔW
+ΔW = B × A × (alpha / r)
+```
+
+Instead of training a full matrix, LoRA trains only two smaller matrices:
+
+```txt
+A: [r, in_features]
+B: [out_features, r]
+```
+
+This makes fine-tuning much cheaper while still allowing the model to adapt to a new task, dataset, style, or domain.
+
+---
+
+## 🧩 LoRA / PEFT Capability Status
+
+APEX-1 includes an educational PEFT implementation built directly in PyTorch.
+
+> **Important:** APEX-1 does not ship with a large pretrained checkpoint. The LoRA code is fully functional and testable, but meaningful fine-tuning quality requires a trained base checkpoint and real dataset. This is intentional: APEX-1 teaches the architecture and training mechanics from scratch.
+
+| Capability | Status |
+|---|---|
+| Freeze base model | ✅ Complete |
+| Inject adapters into `nn.Linear` modules | ✅ Complete |
+| Target MLA, GQA, FFN, MoE, and router projections | ✅ Complete |
+| Adapter-only checkpoint save/load | ✅ Complete |
+| Train only LoRA parameters | ✅ Complete |
+| Merge LoRA into base weights | ✅ Complete |
+| Unmerge LoRA from base weights | ✅ Complete |
+| CLI for SFT fine-tuning | ✅ Complete |
+| CPU smoke demo | ✅ Complete |
+| Real high-quality fine-tuning | Requires trained base checkpoint + dataset |
+
+Default LoRA target modules include:
+
+```txt
+W_Q, W_K, W_V, W_O,
+W_DKV, W_UK, W_UV,
+W_DQ, W_UQ, W_KR, W_QR,
+W_gate, W_up, W_down,
+router
+```
+
+These cover APEX-1's attention projections, MLA projections, feed-forward projections, and MoE routing layers.
 
 ---
 
@@ -55,8 +133,6 @@ APEX-1 includes a complete **educational multimodal architecture**. It can load 
 This means the vision pipeline is architecturally complete and fully testable on CPU.
 
 > **Important:** APEX-1 does **not** ship with pretrained vision weights. The model can process images, but real semantic image understanding requires training on image-caption or visual-instruction datasets. This is intentional: APEX-1 is a course project for learning the architecture from scratch, not a large pretrained multimodal checkpoint.
-
-Course status:
 
 | Capability | Status |
 |---|---|
@@ -75,15 +151,16 @@ Course status:
 
 | Background | What You Will Get |
 |---|---|
-| **CS / Engineering students** | A complete hands-on project that covers what university ML courses skip |
-| **Self-taught developers** | A structured path from "what is a token" to "how does GRPO work" |
-| **ML practitioners** | Deep dives into MLA, MoE, speculative decoding, and modern alignment techniques |
-| **Researchers** | A fully-specified, reproducible reference architecture synthesizing 2024–2025 frontier techniques |
-| **YouTube / content learners** | 32 documentation files, each structured as a complete lesson |
+| **CS / Engineering students** | A hands-on project that covers what university ML courses often skip |
+| **Self-taught developers** | A structured path from "what is a token" to "how does PEFT fine-tuning work" |
+| **ML practitioners** | Deep dives into MLA, MoE, speculative decoding, LoRA, and modern alignment techniques |
+| **Researchers** | A reproducible educational reference architecture synthesizing modern LLM/VLM components |
+| **YouTube / content learners** | 33 documentation files, each structured like a complete lesson |
+| **Open-source builders** | A codebase designed for reading, modifying, testing, and teaching |
 
 ---
 
-## 📚 The Curriculum — 32 Lessons
+## 📚 The Curriculum — 33 Lessons
 
 Every lesson follows the same five-step format:
 
@@ -95,77 +172,83 @@ Every lesson follows the same five-step format:
 |---|---|---|
 | [00](docs/00-introduction.md) | What Is a Language Model? | Tokens, loss, training loop |
 | [01](docs/01-project-structure.md) | Project Structure | Every file explained, reading order |
-| [02](docs/02-configuration.md) | Configuration System | Hyperparameters, YAML loading, BUG-18 validation |
-| [03](docs/03-tokenizer.md) | Tokenizer | BPE algorithm, special tokens, SFT masking, BUG-14 |
+| [02](docs/02-configuration.md) | Configuration System | Hyperparameters, YAML loading, validation |
+| [03](docs/03-tokenizer.md) | Tokenizer | BPE algorithm, special tokens, SFT masking |
 
 ### 🔵 Part 2 — Building Blocks
 
 | Lesson | Topic | Key Concepts |
 |---|---|---|
-| [04](docs/04-embeddings-and-rmsnorm.md) | Embeddings & RMSNorm | Weight tying, √d scaling, normalisation math |
-| [05](docs/05-positional-encoding-rope.md) | RoPE & YaRN | Rotation math, three-regime YaRN, BUG-22 |
-| [06](docs/06-attention-masks.md) | Attention Masks | Prefix bidir, causal, sliding window, BUG-10 |
+| [04](docs/04-embeddings-and-rmsnorm.md) | Embeddings & RMSNorm | Weight tying, √d scaling, normalization math |
+| [05](docs/05-positional-encoding-rope.md) | RoPE & YaRN | Rotation math, context extension |
+| [06](docs/06-attention-masks.md) | Attention Masks | Prefix bidir, causal, sliding window |
 
 ### 🟣 Part 3 — Attention Mechanisms
 
 | Lesson | Topic | Key Concepts |
 |---|---|---|
-| [07](docs/07-attention-mla.md) | Multi-Head Latent Attention | 93% KV cache reduction, BUG-01, BUG-02 |
+| [07](docs/07-attention-mla.md) | Multi-Head Latent Attention | KV cache reduction, latent compression |
 | [08](docs/08-attention-gqa.md) | GQA + Sliding Window | Group sharing, local/global ratio |
 
 ### 🟠 Part 4 — Feed-Forward Networks & Experts
 
 | Lesson | Topic | Key Concepts |
 |---|---|---|
-| [09](docs/09-ffn-swiglu.md) | FFN & SwiGLU | Gating, dead neurons, 3-matrix design, BUG-17 |
-| [10](docs/10-mixture-of-experts.md) | Mixture of Experts | 3-tier hierarchy, routing math, BUG-08 |
-| [11](docs/11-skip-gate.md) | Dynamic Skip Gate | STE binary threshold, 25–35% FFN savings |
-| [12](docs/12-load-balancer.md) | Auxiliary-Loss-Free Load Balancer | Expert collapse, sign-gradient bias, BUG-11 |
-| [13](docs/13-multi-token-head.md) | Multi-Token Prediction | 4× training signal, speculative decoding, BUG-12 |
+| [09](docs/09-ffn-swiglu.md) | FFN & SwiGLU | Gating, activation design, 3-matrix FFN |
+| [10](docs/10-mixture-of-experts.md) | Mixture of Experts | Hierarchical routing, sparse activation |
+| [11](docs/11-skip-gate.md) | Dynamic Skip Gate | Conditional compute, STE binary threshold |
+| [12](docs/12-load-balancer.md) | Auxiliary-Loss-Free Load Balancer | Expert collapse prevention |
+| [13](docs/13-multi-token-head.md) | Multi-Token Prediction | Extra training signal, speculative decoding |
 
 ### 🔴 Part 5 — The Full Model
 
 | Lesson | Topic | Key Concepts |
 |---|---|---|
-| [14](docs/14-transformer-block.md) | Transformer Block | Pre-norm, residuals, layer assignment, BUG-19 |
-| [15](docs/15-full-model.md) | Complete APEX-1 Model | Two RoPE caches BUG-07, KV position BUG-09 |
+| [14](docs/14-transformer-block.md) | Transformer Block | Pre-norm, residuals, layer assignment |
+| [15](docs/15-full-model.md) | Complete APEX-1 Model | End-to-end model assembly |
 
 ### 🟡 Part 6 — Training
 
 | Lesson | Topic | Key Concepts |
 |---|---|---|
-| [16](docs/16-training-losses.md) | Training Losses | Cross-entropy, SFT masking, BUG-12 NaN fix |
-| [17](docs/17-scheduler-and-optimizer.md) | Optimizer & LR Schedule | AdamW full math, cosine warmup |
-| [18](docs/18-training-pipeline.md) | Training Pipeline | Mixed precision, gradient accumulation, BUG-11 |
-| [19](docs/19-checkpointing.md) | Checkpointing | RNG state, resume training, BUG-13 |
-| [20](docs/20-datasets.md) | Datasets | Streaming, packing, BUG-24 padding mask |
+| [16](docs/16-training-losses.md) | Training Losses | Cross-entropy, SFT masking, speculative loss |
+| [17](docs/17-scheduler-and-optimizer.md) | Optimizer & LR Schedule | AdamW math, cosine warmup |
+| [18](docs/18-training-pipeline.md) | Training Pipeline | Mixed precision, gradient accumulation |
+| [19](docs/19-checkpointing.md) | Checkpointing | RNG state, resume training |
+| [20](docs/20-datasets.md) | Datasets | Streaming, packing, padding masks |
 
 ### ⚪ Part 7 — Text Generation
 
 | Lesson | Topic | Key Concepts |
 |---|---|---|
 | [21](docs/21-generation-sampling.md) | Sampling Strategies | KV cache, temperature, top-p, top-k |
-| [22](docs/22-speculative-decoding.md) | Speculative Decoding | Draft-verify loop, probabilistic acceptance, BUG-15 |
-| [23](docs/23-thinking-mode.md) | Thinking Mode | CoT scratchpad, budget, BUG-21 |
+| [22](docs/22-speculative-decoding.md) | Speculative Decoding | Draft-verify loop, probabilistic acceptance |
+| [23](docs/23-thinking-mode.md) | Thinking Mode | CoT scratchpad, reasoning budget |
 
 ### 🟤 Part 8 — Alignment & Safety
 
 | Lesson | Topic | Key Concepts |
 |---|---|---|
-| [24](docs/24-reward-model.md) | Reward Model | Bradley-Terry loss, BUG-05 import fix |
-| [25](docs/25-dpo.md) | DPO | Implicit reward, closed-form preference, BUG-16 |
-| [26](docs/26-grpo.md) | GRPO | RL without value function, PPO-clip, BUG-04 |
-| [27](docs/27-process-reward-model.md) | Process Reward Model | Step-level rewards, BUG-06 |
-| [28](docs/28-constitutional-ai.md) | Constitutional AI | Critique-revision loop, BUG-03 |
-| [29](docs/29-combined-reward.md) | Combined Reward | Tri-signal formula, ablation results |
+| [24](docs/24-reward-model.md) | Reward Model | Bradley-Terry loss |
+| [25](docs/25-dpo.md) | DPO | Implicit reward, preference optimization |
+| [26](docs/26-grpo.md) | GRPO | RL without value function, group-relative rewards |
+| [27](docs/27-process-reward-model.md) | Process Reward Model | Step-level rewards |
+| [28](docs/28-constitutional-ai.md) | Constitutional AI | Critique-revision loop |
+| [29](docs/29-combined-reward.md) | Combined Reward | Tri-signal reward formula |
 
-### ⚫ Part 9 — Utilities & Walkthrough
+### ⚫ Part 9 — Utilities, Walkthrough & Multimodal
 
 | Lesson | Topic | Key Concepts |
 |---|---|---|
-| [30](docs/30-utilities.md) | Utilities | Shape checker BUG-23, FLOPs BUG-17, param counter |
-| [31](docs/31-end-to-end-walkthrough.md) | End-to-End Walkthrough | Full runnable code: install → pretrain → SFT → generate |
-| [32](docs/32-vision-capabilities.md) | Vision Capabilities | Image encoder, Perceiver projector, visual-token insertion, multimodal SFT |
+| [30](docs/30-utilities.md) | Utilities | Shape checker, FLOPs, param counter |
+| [31](docs/31-end-to-end-walkthrough.md) | End-to-End Walkthrough | Install → pretrain → SFT → generate |
+| [32](docs/32-vision-capabilities.md) | Vision Capabilities | Image encoder, visual-token insertion, multimodal SFT |
+
+### 🔴 Part 10 — Efficient Fine-Tuning
+
+| Lesson | Topic | Key Concepts |
+|---|---|---|
+| [33](docs/33-lora-peft-finetuning.md) | LoRA & PEFT Fine-Tuning | Low-rank adapters, frozen base model, adapter checkpoints, merge/unmerge |
 
 ---
 
@@ -191,11 +274,12 @@ APEX-1 contains **24 documented bugs** — found, fixed, and explained in detail
 Real engineering is not writing perfect code. It is finding subtle shape mismatches, off-by-one errors in loss computation, and silent incorrect behavior in KV caches. Each bug in APEX-1 comes with:
 
 - What the original code did
-- Why it was wrong (with the exact failure mode)
+- Why it was wrong
+- The exact failure mode
 - The fix and why it works
 - A regression test to prevent recurrence
 
-This is what most courses skip and what real ML engineers spend most of their time doing.
+This is what most courses skip and what real ML engineers spend much of their time doing.
 
 | Bug | File | What Was Wrong |
 |---|---|---|
@@ -208,19 +292,19 @@ This is what most courses skip and what real ML engineers spend most of their ti
 | BUG-07 | `apex_model.py` | Wrong RoPE cache passed to MLA layers — shape mismatch |
 | BUG-08 | `ffn.py` | MoE dispatch silently wrong when multiple tokens routed to same expert |
 | BUG-09 | `generator.py` | KV cache position detection used `isinstance` — fragile and wrong |
-| BUG-10 | `mask.py` | Sliding window mask used Python loop — 128K iterations at long context |
-| BUG-11 | `trainer.py` | Load balancer used global config n_experts, not per-layer actual count |
+| BUG-10 | `mask.py` | Sliding window mask used Python loop — slow at long context |
+| BUG-11 | `trainer.py` | Load balancer used global config `n_experts`, not per-layer actual count |
 | BUG-12 | `losses.py` | Short-sequence speculative loss produced `nan` — silent training corruption |
 | BUG-13 | `checkpoint.py` | Python RNG state saved as PyTorch tensor — non-reproducible resume |
 | BUG-14 | `tokenizer.py` | Thinking tokens inherited wrong type — excluded from SFT loss |
 | BUG-15 | `generator.py` | Speculative acceptance was greedy argmax — biased output distribution |
 | BUG-16 | `dpo.py` | Prompt processed causally in DPO — weaker context representation |
 | BUG-17 | `flops.py` | SwiGLU elementwise multiply missing from FLOPs estimate |
-| BUG-18 | `config.py` | d_model mismatch logged as warning, not error — silent model corruption |
+| BUG-18 | `config.py` | `d_model` mismatch logged as warning, not error — silent model corruption |
 | BUG-19 | `block.py` | `is_moe` flag ignored `config.moe.enabled` — wrong FFN type |
 | BUG-20 | `train.py` | Log file written to CWD — failed in read-only environments |
 | BUG-21 | `generator.py` | Thinking start token consumed 1 budget slot |
-| BUG-22 | `rope.py` | YaRN scaling used Python loop over d_head — slow for large models |
+| BUG-22 | `rope.py` | YaRN scaling used Python loop over `d_head` — slow for large models |
 | BUG-23 | `shape_checker.py` | Always created a new model instead of using the provided one |
 | BUG-24 | `dataset.py` | Padding tokens included in training loss — corrupted pretraining signal |
 
@@ -228,38 +312,41 @@ This is what most courses skip and what real ML engineers spend most of their ti
 
 ## 🏗️ Architecture
 
-APEX-1 picks the single best innovation from each frontier lab:
+APEX-1 picks strong ideas from modern LLM and VLM systems and turns them into a readable educational implementation.
 
-| Feature | Source | Why It Wins |
+| Feature | Source / Inspiration | Why It Matters |
 |---|---|---|
-| Large vocabulary (151K tokens) | Qwen3 | Better multilingual & code coverage |
-| RoPE + YaRN extension | KIMI / DeepSeek | Extends context without retraining |
-| Multi-Head Latent Attention (MLA) | DeepSeek-V3 | 93% KV cache reduction |
-| GQA + Sliding Window | Llama 3 / Mistral | Efficient local attention |
-| Interleaved local/global (1:6) | Gemma 4 | Long-context at fraction of compute |
-| Prefix bidirectional attention | GLM-4 | Full context over system prompt |
-| SwiGLU activation | PaLM / Llama | ~1–2% perplexity gain over ReLU |
-| 3-tier hierarchical MoE (256 experts) | DeepSeek-V3 | Frontier quality at fraction of FLOPs |
-| Auxiliary-loss-free load balancing | DeepSeek-V3 | Stable expert utilization, zero LM loss interference |
-| Dynamic skip gate | Early-exit research | 25–35% FFN compute saved |
-| Multi-token prediction | DeepSeek-V3 | 3× richer training signal, 2.5× inference speedup |
-| Thinking mode (CoT) | DeepSeek-R1 / Claude | Built-in reasoning scratchpad |
-| GRPO alignment | DeepSeek-R1 | Stable RL, no reward model needed |
-| Constitutional AI | Anthropic | Safety baked in, not patched on |
-| Visual token bridge | LLaVA / Flamingo / Qwen-VL style | Images become context tokens without rewriting the decoder |
-| Native ViT encoder | Vision Transformer | From-scratch educational image encoder |
-| Perceiver resampler | Flamingo-style compression | Fixed visual token budget for efficient multimodal context |
+| Large vocabulary | Qwen-style tokenizer design | Better multilingual and code coverage |
+| RoPE + YaRN extension | KIMI / DeepSeek-style context extension | Longer context without rewriting attention |
+| Multi-Head Latent Attention | DeepSeek-V3-style MLA | Smaller KV cache |
+| GQA + Sliding Window | Llama / Mistral-style efficient attention | Fast local attention |
+| Interleaved local/global attention | Gemma-style pattern | Long-context efficiency |
+| Prefix bidirectional attention | GLM-style prompting | Full context over system prefix |
+| SwiGLU activation | PaLM / Llama-style FFN | Stronger nonlinear representation |
+| Hierarchical MoE | DeepSeek / MiniMax-style sparse experts | More capacity with less active compute |
+| Auxiliary-loss-free load balancing | DeepSeek-style balancing | Stable expert use without LM-loss interference |
+| Dynamic skip gate | Conditional-compute research | Save FFN compute on easy tokens |
+| Multi-token prediction | DeepSeek-style training signal | Richer next-token supervision |
+| Thinking mode | Reasoning-model style scratchpad | Controlled reasoning budget |
+| GRPO alignment | DeepSeek-R1-style RL | Group-relative reward optimization |
+| Constitutional AI | Anthropic-style safety process | Critique and revision pipeline |
+| Visual token bridge | LLaVA / Flamingo / Qwen-VL style | Images become language-context tokens |
+| Native ViT encoder | Vision Transformer | From-scratch image patch encoder |
+| Perceiver resampler | Flamingo-style compression | Fixed visual token budget |
+| LoRA adapters | LoRA / PEFT research | Efficient task adaptation without full fine-tuning |
+| Adapter checkpoints | PEFT workflow | Save small trainable deltas instead of full model copies |
 
-```
-Input tokens [batch, seq_len]
+```txt
+Text tokens [batch, seq_len]
         │
         ▼
-Image pixels [batch, 3, H, W]
-        │
-        ▼
-┌─────────────────────┐
-│ Vision Encoder      │  ViT patch features
-└─────────┬───────────┘
+Image pixels [batch, 3, H, W]        Optional LoRA/PEFT adapters
+        │                                      │
+        ▼                                      ▼
+┌─────────────────────┐              ┌──────────────────────┐
+│ Vision Encoder      │              │ LoRA wrapped Linear  │
+│ ViT patch features  │              │ W' = W + BA(alpha/r) │
+└─────────┬───────────┘              └──────────────────────┘
           ▼
 ┌─────────────────────┐
 │ Vision Projector    │  Perceiver/MLP → d_model visual tokens
@@ -278,16 +365,15 @@ Inserted at <|img|> inside token embeddings
 │                                              │
 │  ┌─────────┐    ┌──────────────────────┐     │
 │  │ RMSNorm │───►│ Attention            │     │
-│  └─────────┘    │  MLA (global layers) │     │
-│                 │  GQA+SW (local)      │     │
+│  └─────────┘    │  MLA / GQA+SW        │     │
+│                 │  + optional LoRA     │     │
 │                 └──────────┬───────────┘     │
 │                    + residual                │
 │                            │                 │
 │  ┌─────────┐    ┌─────────▼──────────┐      │
-│  │ Skip    │───►│ FFN                │      │
-│  │ Gate    │    │  Dense (even layers)│      │
-│  └─────────┘    │  MoE   (odd layers)│      │
-│                 └──────────┬─────────┘      │
+│  │ Skip    │───►│ FFN / MoE          │      │
+│  │ Gate    │    │ + optional LoRA    │      │
+│  └─────────┘    └──────────┬─────────┘      │
 │                    + residual (gated)        │
 └─────────────────────┬───────────────────────┘
                       │
@@ -295,7 +381,7 @@ Inserted at <|img|> inside token embeddings
               ┌───────────────┐
               │   RMSNorm     │
               │   LM Head     │  → logits [batch, seq, vocab]
-              │   Spec Heads  │  → 4 speculative predictions
+              │   Spec Heads  │  → speculative predictions
               └───────────────┘
 ```
 
@@ -323,7 +409,22 @@ Inserted at <|img|> inside token embeddings
 | `num_visual_tokens` | 4 | Fixed visual-token budget |
 | Projector | Perceiver / MLP | Compress image features into language tokens |
 
-Start with **APEX-1-Tiny** (`configs/apex1_tiny.yaml`) — ~1M params, runs on CPU in seconds. For multimodal lessons, start with **APEX-1-Tiny-Vision** (`configs/apex1_tiny_vision.yaml`), which also runs on CPU for forward-pass demos and tests.
+### LoRA Configuration
+
+| LoRA Parameter | Tiny LoRA Default | Why |
+|---|---:|---|
+| `r` | 4 | Small low-rank adapter for CPU demos |
+| `alpha` | 8 | Common scaling ratio |
+| `dropout` | 0.0 | Deterministic smoke tests |
+| `freeze_base_model` | `true` | Train only adapter parameters |
+| `bias` | `none` | Simple PEFT baseline |
+| `modules_to_save` | `[]` | Adapter-only checkpoint by default |
+
+Start with **APEX-1-Tiny** (`configs/apex1_tiny.yaml`) — ~1M params, runs on CPU in seconds.
+
+For multimodal lessons, start with **APEX-1-Tiny-Vision** (`configs/apex1_tiny_vision.yaml`).
+
+For PEFT lessons, start with **APEX-1-Tiny-LoRA** (`configs/apex1_tiny_lora.yaml`).
 
 ---
 
@@ -339,7 +440,7 @@ python -m venv .venv
 source .venv/bin/activate
 pip install -e ".[all]"
 
-# Run a text forward pass (no training needed)
+# Run a text forward pass
 python examples/forward_pass_demo.py
 
 # Run text generation
@@ -348,16 +449,22 @@ python examples/generation_demo.py
 # Try thinking mode
 python examples/thinking_mode_demo.py
 
-# Visualise attention masks
+# Visualize attention masks
 python examples/mask_visualization.py
 
-# Try a vision forward pass (CPU-friendly)
+# Try a vision forward pass
 python examples/vision_forward_demo.py
 
-# Run only vision tests
+# Try LoRA / PEFT fine-tuning smoke demo
+python examples/lora_finetune_demo.py
+
+# Run LoRA tests
+pytest tests/test_lora_peft.py -v
+
+# Run vision tests
 pytest tests/test_vision.py -v
 
-# Run the full suite: 86 core + 10 vision tests
+# Run the full suite
 pytest tests/ -v
 ```
 
@@ -371,11 +478,22 @@ Hidden states: (1, 10, 64)
 KV cache layers: 6
 ```
 
+Expected LoRA demo output:
+
+```txt
+Base parameters: ...
+Trainable parameters: ...
+Trainable %: ...
+Loss before step: ...
+Loss after step: ...
+Saved adapter: ...
+```
+
 ---
 
-## 🧪 Evaluation, Benchmarking & Inspection — v2.4.0
+## 🧪 Evaluation, Benchmarking & Inspection — v2.4.0+
 
-APEX-1 now includes a small educational evaluation and benchmarking toolkit.
+APEX-1 includes a small educational evaluation and benchmarking toolkit.
 
 This helps learners answer practical model-engineering questions:
 
@@ -386,8 +504,9 @@ This helps learners answer practical model-engineering questions:
 - What is the model's next-token perplexity?
 - Are generated texts repetitive?
 - Did the vision forward pass insert the expected number of visual tokens?
+- How many parameters are trainable after LoRA injection?
 
-New commands:
+Commands:
 
 ```bash
 # Inspect parameters and layer types
@@ -403,15 +522,124 @@ python scripts/print_architecture.py --table
 python scripts/benchmark.py --batch-size 1 --seq-len 16 --repeats 5
 python scripts/benchmark.py --vision --batch-size 1 --seq-len 16 --repeats 5
 
-# Run new demos
+# Run demos
 python examples/eval_demo.py
 python examples/benchmark_demo.py
 python examples/inspect_model_demo.py
 python examples/architecture_diagram_demo.py
 python examples/tiny_dataset_demo.py
 
-# Run the new tests
+# Run evaluation and inspector tests
 pytest tests/test_eval_and_inspector.py -v
+```
+
+---
+
+## 🔧 LoRA / PEFT Fine-Tuning — v2.5.0
+
+### 1. Use the LoRA config
+
+```yaml
+# configs/apex1_tiny_lora.yaml
+peft:
+  enabled: true
+  method: lora
+  r: 4
+  alpha: 8
+  dropout: 0.0
+  freeze_base_model: true
+  target_modules:
+    - W_Q
+    - W_K
+    - W_V
+    - W_O
+    - W_DKV
+    - W_UK
+    - W_UV
+    - W_DQ
+    - W_UQ
+    - W_KR
+    - W_QR
+    - W_gate
+    - W_up
+    - W_down
+    - router
+  modules_to_save: []
+  bias: none
+```
+
+### 2. Run the CPU LoRA demo
+
+```bash
+python examples/lora_finetune_demo.py
+```
+
+This verifies:
+
+- base model construction
+- LoRA adapter injection
+- frozen base parameters
+- trainable adapter parameters
+- one optimization step
+- adapter-only checkpoint save
+
+### 3. Fine-tune with the CLI
+
+```bash
+python scripts/finetune_lora.py \
+  --config configs/apex1_tiny_lora.yaml \
+  --data data/samples/tiny_sft.jsonl \
+  --output-dir runs/lora_tiny \
+  --max-steps 20
+```
+
+Optional arguments:
+
+```bash
+python scripts/finetune_lora.py \
+  --config configs/apex1_tiny_lora.yaml \
+  --data data/samples/tiny_sft.jsonl \
+  --tokenizer tokenizer.json \
+  --checkpoint checkpoints/base_model.pt \
+  --adapter adapters/domain_adapter.pt \
+  --output-dir runs/lora_domain \
+  --max-steps 100
+```
+
+### 4. Save only adapter weights
+
+LoRA checkpoints are small because they save only adapter parameters:
+
+```txt
+runs/lora_tiny/
+├── adapter_step_10.pt
+├── adapter_step_20.pt
+└── adapter_final.pt
+```
+
+### 5. Load adapter weights
+
+```python
+from apex.config import APEXConfig
+from apex.model.apex_model import APEX1Model
+from apex.model.lora import load_lora_adapters
+
+config = APEXConfig.from_yaml("configs/apex1_tiny_lora.yaml")
+model = APEX1Model(config)
+
+load_lora_adapters(model, "runs/lora_tiny/adapter_final.pt")
+```
+
+### 6. Merge LoRA weights for deployment-style experiments
+
+```python
+from apex.model.lora import merge_lora_weights, unmerge_lora_weights
+
+merge_lora_weights(model)
+# run inference with merged weights
+
+unmerge_lora_weights(model)
+# return to adapter form
 ```
 
 ---
@@ -421,14 +649,15 @@ pytest tests/test_eval_and_inspector.py -v
 ```txt
 APEX-1/
 ├── apex/
-│   ├── config.py                 # All hyperparameters — text, training, alignment, vision
+│   ├── __init__.py               # Package version and public exports
+│   ├── config.py                 # Hyperparameters: text, training, alignment, vision, PEFT
 │   │
 │   ├── eval/
-│   │   ├── metrics.py                  # token accuracy + token cross-entropy
-│   │   ├── perplexity.py               # next-token perplexity evaluation
-│   │   ├── generation_quality.py       # distinct-n, repetition, average length
-│   │   ├── vision_eval.py              # vision forward-output validation
-│   │   └── benchmark.py                # tiny forward-pass benchmark helper
+│   │   ├── metrics.py            # Token accuracy + token cross-entropy
+│   │   ├── perplexity.py         # Next-token perplexity evaluation
+│   │   ├── generation_quality.py # distinct-n, repetition, average length
+│   │   ├── vision_eval.py        # Vision forward-output validation
+│   │   └── benchmark.py          # Tiny forward-pass benchmark helper
 │   │
 │   ├── model/
 │   │   ├── norm.py               # RMSNorm
@@ -440,7 +669,8 @@ APEX-1/
 │   │   ├── load_balancer.py      # Auxiliary-loss-free balancer
 │   │   ├── multi_token_head.py   # Speculative prediction heads
 │   │   ├── block.py              # One complete transformer block
-│   │   ├── apex_model.py         # The complete text-only APEX-1 model
+│   │   ├── lora.py               # LoRA layers, injection, save/load, merge/unmerge
+│   │   ├── apex_model.py         # Complete text-only APEX-1 model + PEFT support
 │   │   └── apex_vision_model.py  # Multimodal APEX-1 model: text + image tokens
 │   │
 │   ├── vision/
@@ -454,10 +684,12 @@ APEX-1/
 │   │   └── train_tokenizer.py    # Tokenizer training script
 │   │
 │   ├── generation/               # Sampling + generation engine
+│   │
 │   ├── training/
 │   │   ├── losses.py             # Text pretraining + SFT losses
 │   │   ├── vision_losses.py      # Vision SFT loss + visual-token label expansion
-│   │   ├── trainer.py            # Training loop
+│   │   ├── trainer.py            # Base training loop
+│   │   ├── peft.py               # PEFT / LoRA SFT trainer
 │   │   ├── scheduler.py          # LR scheduler
 │   │   └── checkpoint.py         # Save / load checkpoints
 │   │
@@ -467,47 +699,58 @@ APEX-1/
 │   │   ├── dataset.py            # Text dataset classes + DataLoader factories
 │   │   └── vision_dataset.py     # Image-caption / vision-instruction dataset
 │   │
-│   └── utils/                    # Shape checker, FLOPs, param counter, ASCII / Markdown architecture map
+│   └── utils/                    # Shape checker, FLOPs, param counter, architecture maps
 │
 ├── configs/
 │   ├── apex1_tiny.yaml           # Tiny text-only config
 │   ├── apex1_small.yaml          # Small text-only config
 │   ├── apex1_medium.yaml         # Medium text-only config
 │   ├── apex1_large.yaml          # Large text-only config
-│   └── apex1_tiny_vision.yaml    # Tiny multimodal config for CPU tests/demos
+│   ├── apex1_tiny_vision.yaml    # Tiny multimodal config
+│   └── apex1_tiny_lora.yaml      # Tiny LoRA / PEFT config
 │
 ├── docs/
 │   ├── 00-introduction.md
 │   ├── ...
 │   ├── 31-end-to-end-walkthrough.md
-│   ├── 32-vision-capabilities.md # Vision architecture lesson
+│   ├── 32-vision-capabilities.md
+│   ├── 33-lora-peft-finetuning.md
 │   └── APEX-1-Mathematical-Reference-Part*.md
 │
 ├── tests/
 │   ├── test_all.py               # Core unit tests
 │   ├── test_bugfixes.py          # Regression tests for documented bugs
-│   └── test_vision.py            # Vision config, encoder, projector, model, loss tests
+│   ├── test_vision.py            # Vision config, encoder, projector, model, loss tests
+│   ├── test_eval_and_inspector.py# Evaluation, benchmark, inspector tests
+│   └── test_lora_peft.py         # LoRA / PEFT tests
 │
 ├── examples/
 │   ├── forward_pass_demo.py      # Text forward-pass demo
 │   ├── generation_demo.py        # Text generation demo
 │   ├── thinking_mode_demo.py     # Thinking mode demo
-│   ├── mask_visualization.py     # Attention mask visualisation
+│   ├── mask_visualization.py     # Attention mask visualization
 │   ├── vision_forward_demo.py    # Image + text forward-pass demo
-│   └── vision_chat_demo.py       # Vision chat prompt demo
+│   ├── vision_chat_demo.py       # Vision chat prompt demo
+│   ├── eval_demo.py              # Evaluation demo
+│   ├── benchmark_demo.py         # Benchmark demo
+│   ├── inspect_model_demo.py     # Model inspector demo
+│   ├── architecture_diagram_demo.py
+│   ├── tiny_dataset_demo.py
+│   └── lora_finetune_demo.py     # LoRA / PEFT CPU smoke demo
 │
 ├── scripts/
 │   ├── train.py                  # Text training CLI
 │   ├── generate.py               # Text generation CLI
-│   ├── benchmark.py                # CLI benchmark
-│   ├── inspect_model.py            # CLI model inspector
-│   └── print_architecture.py       # CLI architecture diagram
+│   ├── benchmark.py              # CLI benchmark
+│   ├── inspect_model.py          # CLI model inspector
+│   ├── print_architecture.py     # CLI architecture diagram
+│   └── finetune_lora.py          # LoRA / PEFT fine-tuning CLI
 │
 ├── data/samples/
-│   ├──  tiny_text.jsonl             # text pretraining format example
-│   ├──  tiny_sft.jsonl              # supervised fine-tuning format example
-│   ├──  tiny_preference.jsonl       # preference data format example
-│   └──  tiny_vision.jsonl           # vision instruction format example
+│   ├── tiny_text.jsonl           # Text pretraining format example
+│   ├── tiny_sft.jsonl            # Supervised fine-tuning format example
+│   ├── tiny_preference.jsonl     # Preference data format example
+│   └── tiny_vision.jsonl         # Vision instruction format example
 │
 ├── README.md
 ├── CHANGELOG.md
@@ -517,15 +760,33 @@ APEX-1/
 
 ---
 
+## 🧪 What's New by Version
 
-## 🧪 What's New in v2.4.0
+### v2.5.0 — LoRA / PEFT Fine-Tuning
 
-- **Vision capability architecture** — native ViT-style image encoder, vision-to-language projector, and `APEX1VisionModel`.
-- **`<|img|>` is now active** — image placeholders are replaced by continuous visual tokens before the transformer runs.
-- **CPU-friendly multimodal demos** — `examples/vision_forward_demo.py` and `examples/vision_chat_demo.py`.
-- **Vision training utilities** — JSONL vision dataset, visual-token label expansion, and multimodal SFT loss.
-- **New guide** — `docs/32-vision-capabilities.md`.
-- **96 passing tests** — 86 core tests + 10 vision tests.
+- **LoRA from scratch** — `LoRALinear` wraps `nn.Linear` with trainable low-rank adapters.
+- **PEFT config** — `PEFTConfig` added to `APEXConfig`.
+- **Automatic adapter injection** — target attention, MLA, FFN, and MoE router modules by name.
+- **Frozen base model** — train only adapter parameters.
+- **Adapter-only checkpointing** — save/load tiny adapter state dicts.
+- **Merge/unmerge support** — merge LoRA deltas into base weights for inference experiments.
+- **LoRA SFT trainer** — `PEFTSFTTrainer` trains only `requires_grad=True` parameters.
+- **New CLI** — `scripts/finetune_lora.py`.
+- **New CPU demo** — `examples/lora_finetune_demo.py`.
+- **New config** — `configs/apex1_tiny_lora.yaml`.
+- **New tests** — `tests/test_lora_peft.py`.
+- **New guide** — `docs/33-lora-peft-finetuning.md`.
+
+### v2.4.0 — Evaluation, Benchmarking, Inspection & Vision Improvements
+
+- Vision capability architecture — native ViT-style image encoder, vision-to-language projector, and `APEX1VisionModel`.
+- `<|img|>` is active — image placeholders are replaced by continuous visual tokens before the transformer runs.
+- CPU-friendly multimodal demos — `examples/vision_forward_demo.py` and `examples/vision_chat_demo.py`.
+- Vision training utilities — JSONL vision dataset, visual-token label expansion, and multimodal SFT loss.
+- Evaluation toolkit — token metrics, perplexity, generation-quality helpers.
+- Inspection tools — parameter counts, layer-type summaries, ASCII architecture diagrams.
+- Benchmarking helpers — small CPU forward-pass benchmark scripts.
+- New guide — `docs/32-vision-capabilities.md`.
 
 Full history in [CHANGELOG.md](CHANGELOG.md).
 
@@ -543,10 +804,38 @@ Start at [docs/04-embeddings-and-rmsnorm.md](docs/04-embeddings-and-rmsnorm.md).
 Start at [docs/07-attention-mla.md](docs/07-attention-mla.md) — this is where APEX-1 diverges from standard transformer tutorials.
 
 **If you want to understand alignment:**
-Jump directly to Part 8 (docs 24–29). The GRPO lesson (doc 26) is particularly relevant to current frontier research.
+Jump directly to Part 8 (docs 24–29). The GRPO lesson (doc 26) is particularly relevant to current reasoning-model research.
+
+**If you want to understand multimodal models:**
+Read [docs/32-vision-capabilities.md](docs/32-vision-capabilities.md). It explains image preprocessing, patch encoding, visual tokens, projector design, and multimodal SFT loss.
+
+**If you want to understand efficient fine-tuning:**
+Read [docs/33-lora-peft-finetuning.md](docs/33-lora-peft-finetuning.md). It explains LoRA math, adapter injection, frozen-base training, adapter checkpoints, and merge/unmerge.
 
 **If you want the math:**
 The [Mathematical Reference](docs/APEX-1-Mathematical-Reference-Part1.md) covers all 34 formulas with full derivations and numerical examples.
+
+---
+
+## ✅ Recommended Test Commands Before Release
+
+```bash
+# Core tests
+pytest tests/test_all.py -v
+pytest tests/test_bugfixes.py -v
+
+# Vision tests
+pytest tests/test_vision.py -v
+
+# Evaluation and inspector tests
+pytest tests/test_eval_and_inspector.py -v
+
+# LoRA / PEFT tests
+pytest tests/test_lora_peft.py -v
+
+# Everything
+pytest tests/ -v
+```
 
 ---
 
@@ -555,11 +844,14 @@ The [Mathematical Reference](docs/APEX-1-Mathematical-Reference-Part1.md) covers
 We welcome contributions. See [CONTRIBUTING.md](CONTRIBUTING.md) for guidelines.
 
 Key areas where contributions help:
+
 - Kaggle/Colab training notebooks for APEX-1-Tiny
+- Small pretrained educational checkpoints
 - Additional test coverage for alignment modules
+- Additional LoRA/PEFT examples
+- CPU-friendly vision examples, datasets, and training notebooks
 - Translations of documentation to other languages
 - Bug reports and fixes
-- CPU-friendly vision examples, datasets, and training notebooks
 
 ---
 
@@ -567,10 +859,10 @@ Key areas where contributions help:
 
 ```bibtex
 @software{apex1_2026,
-  title  = {APEX-1: A Best-of-All-Worlds Large Language + Vision Model},
-  author = {Aarambh Dev Hub},
-  year   = {2026},
-  url    = {https://github.com/AarambhDevHub/APEX-1},
+  title   = {APEX-1: A Best-of-All-Worlds Large Language + Vision Model},
+  author  = {Aarambh Dev Hub},
+  year    = {2026},
+  url     = {https://github.com/AarambhDevHub/APEX-1},
   license = {Apache-2.0}
 }
 ```
@@ -579,18 +871,19 @@ Key areas where contributions help:
 
 ## 🙏 Acknowledgments
 
-APEX-1 stands on the shoulders of giants. Architectural innovations from:
+APEX-1 stands on the shoulders of giants. Architectural and educational inspiration includes:
 
-- **Anthropic** (Claude) — Constitutional AI, reasoning approach
-- **OpenAI** (GPT-4.5) — Process Reward Models
-- **DeepSeek** (V3/R1) — MLA, GRPO, auxiliary-loss-free load balancing
-- **Alibaba** (Qwen3) — Large vocabulary design
-- **Google** (Gemma 4) — Interleaved attention pattern
-- **Zhipu AI** (GLM-4) — Prefix bidirectional attention
-- **Moonshot AI** (KIMI) — YaRN context extension
-- **MiniMax** — Efficient MoE design
-- **Meta** (Llama 3) — GQA + sliding window, SwiGLU
-- **LLaVA / Flamingo / ViT research** — visual-token bridge, image encoder, and multimodal instruction-tuning pattern
+- **Anthropic / Claude** — Constitutional AI and reasoning-style safety workflows
+- **OpenAI / GPT-style systems** — Process reward modeling and large-scale language modeling ideas
+- **DeepSeek-V3/R1** — MLA, GRPO, auxiliary-loss-free load balancing, reasoning-model ideas
+- **Alibaba / Qwen** — Large vocabulary and multilingual/code-tokenizer inspiration
+- **Google / Gemma and ViT** — efficient attention patterns and vision transformer foundations
+- **Zhipu AI / GLM** — prefix bidirectional attention inspiration
+- **Moonshot AI / KIMI** — YaRN-style long-context extension inspiration
+- **MiniMax** — efficient MoE design inspiration
+- **Meta / Llama** — GQA, SwiGLU, and practical transformer engineering inspiration
+- **LLaVA / Flamingo / Qwen-VL research** — visual-token bridge and multimodal instruction-tuning pattern
+- **LoRA / PEFT research community** — efficient low-rank adaptation and adapter fine-tuning workflows
 
 ---
 
@@ -626,6 +919,6 @@ Free to use, modify, and distribute with attribution.
 
 *Built with ❤️ by Aarambh Dev Hub — Teaching AI from the ground up.*
 
-**[Start Learning →](docs/00-introduction.md)**
+**[Start Learning →](docs/00-introduction.md)** · **[Learn Vision →](docs/32-vision-capabilities.md)** · **[Learn LoRA/PEFT →](docs/33-lora-peft-finetuning.md)**
 
 </div>

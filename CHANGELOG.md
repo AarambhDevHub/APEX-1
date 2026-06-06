@@ -5,6 +5,33 @@ All notable changes to APEX-1 will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+# Changelog — v2.5.0
+
+## Added
+
+- Native LoRA implementation in `apex/model/lora.py`
+- `PEFTConfig` in `apex/config.py`
+- Automatic LoRA injection inside `APEX1Model`
+- Adapter-only saving and loading
+- LoRA merge/unmerge helpers for inference/export
+- PEFT SFT trainer in `apex/training/peft.py`
+- Fine-tuning CLI: `scripts/finetune_lora.py`
+- CPU-friendly LoRA demo: `examples/lora_finetune_demo.py`
+- Tiny LoRA config: `configs/apex1_tiny_lora.yaml`
+- Tests: `tests/test_lora_peft.py`
+- New guide: `docs/33-lora-peft-finetuning.md`
+
+## Changed
+
+- Version bumped to `2.5.0`
+- `APEX1Model` now supports optional PEFT adapter injection
+- README can now document LoRA fine-tuning commands and workflow
+
+## Why
+
+APEX-1 already had pretraining, SFT, alignment, vision, and evaluation. LoRA/PEFT makes it practical to fine-tune APEX-1 on small custom datasets without training the full model.
+
+
 ## [2.4.0] — Evaluation, Benchmarking, and Model Inspector
 
 ### Added

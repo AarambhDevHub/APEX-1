@@ -1,17 +1,10 @@
 """
 Complete APEX-1 Model.
 
-Fix BUG-07: RoPE caches are now passed as an explicit pair
-``(cos_content, cos_rope)`` to each block rather than selecting one at
-the model level.  GQA blocks use the content cache (built with d_head);
-MLA blocks use both caches — content for position tracking and rope for
-the decoupled RoPE projections (d_head_rope).  The block and attention
-modules were updated accordingly.
-
-Fix BUG-09 (generator interaction): Position tracking now uses
-``is_global_layer`` to detect cache type rather than ``isinstance``
-checks, matching the updated cache format where MLA cache is a tuple
-``(c_kv, K_rope)`` and GQA cache is a tuple ``(K, V)``.
+v2.5.0 adds optional PEFT/LoRA adapter injection. When ``config.peft.enabled``
+is true, selected linear projections are wrapped with ``LoRALinear`` after base
+weight initialization. The base model can be frozen while only adapter weights
+remain trainable.
 """
 
 from __future__ import annotations
@@ -25,6 +18,7 @@ import torch.nn as nn
 
 from apex.config import APEXConfig
 from apex.model.block import APEXTransformerBlock
+from apex.model.lora import apply_lora_adapters, peft_parameter_summary
 from apex.model.mask import build_apex_attention_mask, is_global_layer
 from apex.model.multi_token_head import MultiTokenHead
 from apex.model.norm import RMSNorm
@@ -57,7 +51,6 @@ class APEX1Model(nn.Module):
         else:
             self.multi_token_head = None
 
-        # Precompute RoPE caches for d_head (GQA) and d_head_rope (MLA)
         cos_cache, sin_cache, self.attn_factor = precompute_rope_cache_with_yarn(
             d_head=m.d_head,
             max_seq_len=m.max_seq_len,
@@ -77,6 +70,16 @@ class APEX1Model(nn.Module):
         self.register_buffer("sin_cache_rope", sin_rope, persistent=False)
 
         self._init_weights()
+
+        if config.peft.enabled:
+            apply_lora_adapters(self, config.peft)
+            peft_stats = peft_parameter_summary(self)
+            logger.info(
+                "LoRA/PEFT enabled: trainable=%s / total=%s (%.4f%%)",
+                self._format_params(int(peft_stats["trainable"])),
+                self._format_params(int(peft_stats["total"])),
+                float(peft_stats["trainable_percent"]),
+            )
 
         logger.info(
             "APEX-1 Model initialized: %d layers, d_model=%d, vocab=%d, "
@@ -105,38 +108,19 @@ class APEX1Model(nn.Module):
         kv_caches: Optional[list[Any]] = None,
         return_hidden: bool = False,
     ) -> dict[str, Any]:
-        """Full forward pass through APEX-1.
-
-        Args:
-            token_ids: Input token IDs ``[batch, seq_len]``.
-            positions: Position indices ``[seq_len]``. Auto-computed if None.
-            prefix_len: Number of prefix tokens for bidirectional attention.
-            kv_caches: List of per-layer KV caches from previous steps.
-            return_hidden: If True, also return final hidden states.
-
-        Returns:
-            Dict with logits, spec_logits, kv_caches, (hidden_states).
-        """
+        """Full forward pass through APEX-1."""
         batch, seq_len = token_ids.shape
         device = token_ids.device
 
         x = self.embedding(token_ids) * self.embed_scale
 
-        # Determine positions
         if positions is None:
             if kv_caches is not None and kv_caches[0] is not None:
-                # BUG-09 FIX: use is_global_layer instead of isinstance to
-                # robustly detect cache type.  Layer 0 is always GQA (local)
-                # since global_layer_freq >= 2 in all configs, so this is safe.
-                # GQA cache: (K, V)  K.shape = [b, n_kv, seq, d_head]
-                # MLA cache: (c_kv, K_rope)  c_kv.shape = [b, seq, d_kv]
                 layer_0_is_global = is_global_layer(0, self.config.attention.global_layer_freq)
                 cache_0 = kv_caches[0]
                 if layer_0_is_global:
-                    # MLA: first element is c_kv [b, seq, d_kv]
                     prev_len = cache_0[0].shape[1]
                 else:
-                    # GQA: first element is K [b, n_kv, seq, d_head]
                     prev_len = cache_0[0].shape[2]
                 positions = torch.arange(prev_len, prev_len + seq_len, device=device)
             else:
@@ -156,14 +140,11 @@ class APEX1Model(nn.Module):
                 device=device,
             )
 
-            # BUG-07 FIX: pass the correct RoPE cache to each layer type.
-            # MLA (global): uses d_head_rope cache for decoupled RoPE.
-            # GQA (local):  uses d_head cache for standard RoPE.
             if layer_is_global:
-                cos = self.cos_cache_rope  # d_head_rope — for MLA rope projections
+                cos = self.cos_cache_rope
                 sin = self.sin_cache_rope
             else:
-                cos = self.cos_cache  # d_head — for GQA Q/K rotations
+                cos = self.cos_cache
                 sin = self.sin_cache
 
             x, new_kv = block(x, cos, sin, positions, attn_mask, layer_kv)
@@ -189,6 +170,9 @@ class APEX1Model(nn.Module):
 
     def total_parameters(self) -> int:
         return sum(p.numel() for p in self.parameters())
+
+    def trainable_parameters(self) -> int:
+        return sum(p.numel() for p in self.parameters() if p.requires_grad)
 
     def active_parameters(self) -> int:
         total = 0
@@ -226,8 +210,8 @@ class APEX1Model(nn.Module):
     def _format_params(n: int) -> str:
         if n >= 1e9:
             return f"{n / 1e9:.1f}B"
-        elif n >= 1e6:
+        if n >= 1e6:
             return f"{n / 1e6:.1f}M"
-        elif n >= 1e3:
+        if n >= 1e3:
             return f"{n / 1e3:.1f}K"
         return str(n)

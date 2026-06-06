@@ -4,10 +4,11 @@ APEX-1 Model Configuration.
 Defines the complete configuration dataclass for all APEX-1 model sizes,
 loadable from YAML config files. Covers model dimensions, attention settings,
 MoE parameters, skip gate, multi-token prediction, thinking mode, training
-hyperparameters, GRPO alignment settings, and optional vision settings.
+hyperparameters, GRPO alignment settings, optional vision settings, and
+optional PEFT / LoRA fine-tuning settings.
 
-v2.3.0 Vision Preview adds ``VisionConfig`` so APEX-1 can accept image inputs
-through visual tokens inserted at the existing ``<|img|>`` placeholder.
+v2.5.0 adds ``PEFTConfig`` so APEX-1 can attach trainable LoRA adapters to a
+frozen base model for efficient supervised fine-tuning.
 """
 
 from __future__ import annotations
@@ -106,7 +107,7 @@ class VisionConfig:
     in_channels: int = 3
 
     # Native educational vision encoder
-    encoder_type: str = "native_vit"  # future: clip, siglip, dinov2
+    encoder_type: str = "native_vit"
     d_vision: int = 512
     n_layers: int = 6
     n_heads: int = 8
@@ -120,9 +121,58 @@ class VisionConfig:
     projector_layers: int = 2
 
     # Token plumbing
-    image_token_id: int = 8  # tokenizer fallback for <|img|>
+    image_token_id: int = 8
     freeze_vision_encoder: bool = False
     freeze_language_model: bool = False
+
+
+@dataclass
+class PEFTConfig:
+    """Parameter-efficient fine-tuning configuration.
+
+    LoRA replaces selected ``nn.Linear`` modules with a frozen base projection
+    plus two small trainable low-rank matrices. This lets a learner fine-tune
+    APEX-1 on instruction data while updating only a tiny percentage of the
+    parameters.
+    """
+
+    enabled: bool = False
+    method: str = "lora"
+    r: int = 8
+    alpha: int = 16
+    dropout: float = 0.05
+    freeze_base_model: bool = True
+
+    # Match child module names. These names cover APEX attention, MLA, GQA,
+    # SwiGLU FFN, MoE experts, and MoE router.
+    target_modules: list[str] = field(
+        default_factory=lambda: [
+            "W_Q",
+            "W_K",
+            "W_V",
+            "W_O",
+            "W_DKV",
+            "W_UK",
+            "W_UV",
+            "W_DQ",
+            "W_UQ",
+            "W_KR",
+            "W_QR",
+            "W_gate",
+            "W_up",
+            "W_down",
+            "router",
+        ]
+    )
+
+    # Optional module name fragments to keep trainable/saved with adapters.
+    # Example: ["embedding", "final_norm"].
+    modules_to_save: list[str] = field(default_factory=list)
+
+    # none: train only LoRA matrices
+    # all: train every bias in the model
+    # lora_only: train biases inside LoRA-wrapped modules only
+    bias: str = "none"
 
 
 @dataclass
@@ -167,11 +217,12 @@ class APEXConfig:
     multi_token_head: MultiTokenHeadConfig = field(default_factory=MultiTokenHeadConfig)
     thinking: ThinkingConfig = field(default_factory=ThinkingConfig)
     vision: VisionConfig = field(default_factory=VisionConfig)
+    peft: PEFTConfig = field(default_factory=PEFTConfig)
     training: TrainingConfig = field(default_factory=TrainingConfig)
     grpo: GRPOConfig = field(default_factory=GRPOConfig)
 
     @classmethod
-    def from_yaml(cls, path: str | Path) -> APEXConfig:
+    def from_yaml(cls, path: str | Path) -> "APEXConfig":
         """Load configuration from a YAML file."""
         path = Path(path)
         if not path.exists():
@@ -199,17 +250,20 @@ class APEXConfig:
             config.thinking = _update_dataclass(ThinkingConfig, raw["thinking"])
         if "vision" in raw:
             config.vision = _update_dataclass(VisionConfig, raw["vision"])
+        if "peft" in raw:
+            config.peft = _update_dataclass(PEFTConfig, raw["peft"])
         if "training" in raw:
             config.training = _update_dataclass(TrainingConfig, raw["training"])
         if "grpo" in raw:
             config.grpo = _update_dataclass(GRPOConfig, raw["grpo"])
 
         logger.info(
-            "Config loaded: d_model=%d, n_layers=%d, n_experts=%d, vision=%s",
+            "Config loaded: d_model=%d, n_layers=%d, n_experts=%d, vision=%s, peft=%s",
             config.model.d_model,
             config.model.n_layers,
             config.moe.n_experts,
             config.vision.enabled,
+            config.peft.enabled,
         )
         return config
 
@@ -235,6 +289,7 @@ class APEXConfig:
         m = self.model
         a = self.attention
         v = self.vision
+        p = self.peft
 
         if m.n_heads_q % m.n_heads_kv != 0:
             raise ValueError(
@@ -247,7 +302,6 @@ class APEXConfig:
                 f"global_layer_freq ({a.global_layer_freq}) for clean layer assignment"
             )
 
-        # BUG-18 FIX: raise ValueError instead of warning.
         if m.d_model != m.n_heads_q * m.d_head:
             raise ValueError(
                 f"d_model ({m.d_model}) must equal n_heads_q ({m.n_heads_q}) * "
@@ -278,13 +332,27 @@ class APEXConfig:
             if v.projector_type not in {"perceiver", "mlp"}:
                 raise ValueError("vision.projector_type must be 'perceiver' or 'mlp'")
             if v.encoder_type not in {"native_vit"}:
-                raise ValueError("Only vision.encoder_type='native_vit' is implemented in v2.3.0")
+                raise ValueError("Only vision.encoder_type='native_vit' is implemented")
             max_needed = self.training.seq_len + v.n_visual_tokens
             if max_needed > m.max_seq_len:
                 raise ValueError(
                     f"training.seq_len + vision.n_visual_tokens ({max_needed}) exceeds "
                     f"model.max_seq_len ({m.max_seq_len})"
                 )
+
+        if p.enabled:
+            if p.method != "lora":
+                raise ValueError("Only peft.method='lora' is implemented in v2.5.0")
+            if p.r <= 0:
+                raise ValueError("peft.r must be positive")
+            if p.alpha <= 0:
+                raise ValueError("peft.alpha must be positive")
+            if not 0.0 <= p.dropout < 1.0:
+                raise ValueError("peft.dropout must be in [0.0, 1.0)")
+            if p.bias not in {"none", "all", "lora_only"}:
+                raise ValueError("peft.bias must be one of: none, all, lora_only")
+            if not p.target_modules:
+                raise ValueError("peft.target_modules must contain at least one module name")
 
         logger.info("Config validation passed.")
 
@@ -523,6 +591,18 @@ def get_tiny_config() -> APEXConfig:
         ),
         grpo=GRPOConfig(G=4, beta=0.04, lambda_prm=0.3, lambda_cai=0.3, clip_eps=0.2),
     )
+
+
+def get_tiny_lora_config() -> APEXConfig:
+    """Return a tiny CPU-friendly config with LoRA/PEFT enabled."""
+    cfg = get_tiny_config()
+    cfg.peft.enabled = True
+    cfg.peft.r = 4
+    cfg.peft.alpha = 8
+    cfg.peft.dropout = 0.0
+    cfg.training.peak_lr = 1e-4
+    cfg.training.max_steps = 20
+    return cfg
 
 
 def get_tiny_vision_config() -> APEXConfig:
