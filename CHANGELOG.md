@@ -5,7 +5,62 @@ All notable changes to APEX-1 will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## # APEX-1 v2.8.0 — DoRA / Weight-Decomposed LoRA
+## v2.9.0 — Adapter-DPO Alignment
+
+v2.9.0 adds Direct Preference Optimization for PEFT adapters.
+
+### Added
+
+- `apex/alignment/adapter_dpo.py`
+  - adapter-DPO loss
+  - preference JSONL dataset
+  - adapter-only DPO trainer
+  - frozen reference model helper
+- `scripts/finetune_adapter_dpo.py`
+- `examples/adapter_dpo_demo.py`
+- `tests/test_adapter_dpo.py`
+- `docs/37-adapter-dpo-alignment.md`
+- `data/samples/tiny_preference.jsonl`
+- Adapter-DPO configs:
+  - `configs/apex1_tiny_lora_dpo.yaml`
+  - `configs/apex1_tiny_qlora_dpo.yaml`
+  - `configs/apex1_tiny_dora_dpo.yaml`
+  - `configs/apex1_tiny_qdora_dpo.yaml`
+
+### Updated
+
+- `apex/config.py`
+  - added `AdapterDPOConfig`
+  - added `adapter_dpo` section to `APEXConfig`
+  - added `get_tiny_adapter_dpo_config()`
+- `apex/__init__.py` version to `2.9.0`
+- `pyproject.toml` version to `2.9.0`
+- `README.md` v2.9.0 release notes
+- `apex/model/lora.py` adapter checkpoint metadata version to `2.9.0`
+
+### Test Commands
+
+```bash
+pytest tests/test_lora_peft.py -v
+pytest tests/test_lora_inference.py -v
+pytest tests/test_qlora.py -v
+pytest tests/test_dora.py -v
+pytest tests/test_adapter_dpo.py -v
+python examples/adapter_dpo_demo.py
+```
+
+### Example Training
+
+```bash
+python scripts/finetune_adapter_dpo.py \
+  --config configs/apex1_tiny_lora_dpo.yaml \
+  --data data/samples/tiny_preference.jsonl \
+  --output-dir outputs/adapter-dpo-test \
+  --max-steps 10
+```
+
+
+## v2.8.0 — DoRA / Weight-Decomposed LoRA
 
 APEX-1 v2.8.0 adds an educational DoRA implementation on top of the existing LoRA, QLoRA, and adapter inference stack.
 

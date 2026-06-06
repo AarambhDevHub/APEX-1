@@ -2,13 +2,13 @@
 
 # 🔺 APEX-1
 
-### A Best-of-All-Worlds Large Language + Vision Model — v2.8.0
+### A Best-of-All-Worlds Large Language + Vision Model — v2.9.0
 
 [![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](LICENSE)
 [![Python](https://img.shields.io/badge/Python-3.10%2B-green.svg)](https://python.org)
 [![Status](https://img.shields.io/badge/Status-Architecture%20Complete-brightgreen.svg)]()
 [![Tests](https://img.shields.io/badge/Tests-Core%20%2B%20Vision%20%2B%20LoRA-success.svg)]()
-[![Docs](https://img.shields.io/badge/Docs-36%20Guides-orange.svg)](docs/)
+[![Docs](https://img.shields.io/badge/Docs-37%20Guides-orange.svg)](docs/)
 [![Course](https://img.shields.io/badge/Course-Free%20%26%20Open-purple.svg)](docs/00-introduction.md)
 [![PEFT](https://img.shields.io/badge/PEFT-DoRA%20Adapters-red.svg)](docs/36-dora-weight-decomposed-lora.md)
 
@@ -20,7 +20,7 @@
 
 ### 🆓 This Course Is Completely Free
 
-Other LLM courses charge **$50–$500+** for content like this. APEX-1 is free and always will be — 36 lessons, 4 math references, 24 bug-fix engineering lessons, full annotated source code, CPU-friendly demos, vision architecture, LoRA/PEFT fine-tuning, adapter inference/merge workflows, QLoRA-style 4-bit fine-tuning, DoRA weight-decomposed adapters, and a growing test suite. No paywalls. No sign-ups. Just open source.
+Other LLM courses charge **$50–$500+** for content like this. APEX-1 is free and always will be — 37 lessons, 4 math references, 24 bug-fix engineering lessons, full annotated source code, CPU-friendly demos, vision architecture, LoRA/PEFT fine-tuning, adapter inference/merge workflows, QLoRA-style 4-bit fine-tuning, DoRA weight-decomposed adapters, and a growing test suite. No paywalls. No sign-ups. Just open source.
 
 If this helped you learn, please consider supporting so we can keep building free education:
 
@@ -50,7 +50,7 @@ APEX-1 is four things at once.
 train adapter -> save adapter -> load adapter -> generate -> merge -> unload -> export
 ```
 
-As of **v2.5.0**, APEX-1 includes LoRA/PEFT fine-tuning. As of **v2.6.0**, it also includes adapter inference and merge/export workflows. As of **v2.7.0**, APEX-1 includes an educational QLoRA-style path with 4-bit quantized frozen base weights plus trainable LoRA adapters. As of **v2.8.0**, it adds DoRA/QDoRA: trainable magnitude vectors plus low-rank direction updates. You can freeze the base model, train only adapter parameters, save adapter-only checkpoints, load adapters for generation, merge adapters into base weights, unload PEFT wrappers, and export plain APEX checkpoints for deployment-style experiments.
+As of **v2.5.0**, APEX-1 includes LoRA/PEFT fine-tuning. As of **v2.6.0**, it also includes adapter inference and merge/export workflows. As of **v2.7.0**, APEX-1 includes an educational QLoRA-style path with 4-bit quantized frozen base weights plus trainable LoRA adapters. As of **v2.9.0**, it adds DoRA/QDoRA: trainable magnitude vectors plus low-rank direction updates. You can freeze the base model, train only adapter parameters, save adapter-only checkpoints, load adapters for generation, merge adapters into base weights, unload PEFT wrappers, and export plain APEX checkpoints for deployment-style experiments.
 
 > **If you have ever wanted to understand what is really inside a modern LLM — not just the theory but the actual code — this is for you.**
 
@@ -58,9 +58,9 @@ As of **v2.5.0**, APEX-1 includes LoRA/PEFT fine-tuning. As of **v2.6.0**, it al
 
 
 
-## 🚀 What Is New in v2.8.0?
+## 🚀 What Is New in v2.9.0?
 
-APEX-1 v2.8.0 adds **DoRA: Weight-Decomposed LoRA**.
+APEX-1 v2.9.0 adds **DoRA: Weight-Decomposed LoRA**.
 
 This release extends the PEFT stack:
 
@@ -150,6 +150,7 @@ Run the new tests:
 ```bash
 pytest tests/test_qlora.py -v
 pytest tests/test_dora.py -v
+pytest tests/test_adapter_dpo.py -v
 ```
 
 ---
@@ -274,8 +275,8 @@ APEX-1 includes an educational PEFT implementation built directly in PyTorch.
 | CPU smoke demo | ✅ Complete |
 | Generate with saved adapter | ✅ Complete |
 | Merge and unload adapters into plain checkpoint | ✅ Complete |
-| DoRA magnitude/direction adapters | ✅ Complete in v2.8.0 |
-| QDoRA quantized DoRA experiment | ✅ Complete in v2.8.0 |
+| DoRA magnitude/direction adapters | ✅ Complete in v2.9.0 |
+| QDoRA quantized DoRA experiment | ✅ Complete in v2.9.0 |
 | QLoRA-style 4-bit quantized base + LoRA adapters | ✅ Complete |
 | Real high-quality fine-tuning | Requires trained base checkpoint + dataset |
 
@@ -647,6 +648,7 @@ pytest tests/test_lora_peft.py -v
 pytest tests/test_lora_inference.py -v
 pytest tests/test_qlora.py -v
 pytest tests/test_dora.py -v
+pytest tests/test_adapter_dpo.py -v
 
 # Run vision tests
 pytest tests/test_vision.py -v
@@ -1036,7 +1038,8 @@ APEX-1/
 │   │   ├── scheduler.py          # LR scheduler
 │   │   └── checkpoint.py         # Save / load checkpoints
 │   │
-│   ├── alignment/                # Reward model, DPO, GRPO, PRM, CAI
+│   ├── alignment/                # Reward model, DPO, Adapter-DPO, GRPO, PRM, CAI
+│   │   └── adapter_dpo.py         # Adapter-based DPO trainer and preference dataset
 │   │
 │   ├── data/
 │   │   ├── dataset.py            # Text dataset classes + DataLoader factories
@@ -1229,6 +1232,7 @@ pytest tests/test_lora_inference.py -v
 # QLoRA 4-bit PEFT tests
 pytest tests/test_qlora.py -v
 pytest tests/test_dora.py -v
+pytest tests/test_adapter_dpo.py -v
 
 # Everything
 pytest tests/ -v
@@ -1320,3 +1324,6 @@ Free to use, modify, and distribute with attribution.
 **[Start Learning →](docs/00-introduction.md)** · **[Learn Vision →](docs/32-vision-capabilities.md)** · **[Learn LoRA/PEFT →](docs/33-lora-peft-finetuning.md)** · **[Learn LoRA Inference →](docs/34-lora-inference-and-merge.md)** · **[Learn QLoRA →](docs/35-qlora-4bit-finetuning.md)**
 
 </div>
+
+
+**[Learn Adapter-DPO →](docs/37-adapter-dpo-alignment.md)**

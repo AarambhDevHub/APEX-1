@@ -6,11 +6,11 @@ LLM/VLM ideas into one readable codebase. Features include Multi-Head Latent
 Attention (MLA), Grouped Query Attention with sliding window, Mixture of Experts
 (MoE), auxiliary-loss-free load balancing, dynamic skip gates, multi-token
 prediction, thinking mode, vision-token insertion, educational evaluation /
-benchmarking utilities, LoRA/QLoRA/DoRA PEFT adapters, and adapter
-inference/merge/export workflows.
+benchmarking utilities, LoRA/QLoRA/DoRA PEFT adapters, adapter inference/merge/export workflows,
+and adapter-based DPO preference alignment.
 
 Copyright 2024-2026 Aarambh Dev Hub. Licensed under Apache 2.0.
 """
 
-__version__ = "2.8.0"
+__version__ = "2.9.0"
 __author__ = "Aarambh Dev Hub"
