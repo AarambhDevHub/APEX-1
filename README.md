@@ -2,25 +2,25 @@
 
 # 🔺 APEX-1
 
-### A Best-of-All-Worlds Large Language + Vision Model — v2.5.0
+### A Best-of-All-Worlds Large Language + Vision Model — v2.6.0
 
 [![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](LICENSE)
 [![Python](https://img.shields.io/badge/Python-3.10%2B-green.svg)](https://python.org)
 [![Status](https://img.shields.io/badge/Status-Architecture%20Complete-brightgreen.svg)]()
 [![Tests](https://img.shields.io/badge/Tests-Core%20%2B%20Vision%20%2B%20LoRA-success.svg)]()
-[![Docs](https://img.shields.io/badge/Docs-33%20Guides-orange.svg)](docs/)
+[![Docs](https://img.shields.io/badge/Docs-34%20Guides-orange.svg)](docs/)
 [![Course](https://img.shields.io/badge/Course-Free%20%26%20Open-purple.svg)](docs/00-introduction.md)
-[![PEFT](https://img.shields.io/badge/PEFT-LoRA%20Fine--Tuning-red.svg)](docs/33-lora-peft-finetuning.md)
+[![PEFT](https://img.shields.io/badge/PEFT-LoRA%20Inference%20%2B%20Merge-red.svg)](docs/34-lora-inference-and-merge.md)
 
-**Inspired by:** Claude · GPT-4.5 · DeepSeek-V3/R1 · Qwen3 · Gemma · GLM · KIMI · MiniMax · Llama · LLaVA · Flamingo · ViT · LoRA/PEFT research
+**Inspired by:** Claude · GPT-style systems · DeepSeek-V3/R1 · Qwen · Gemma · GLM · KIMI · MiniMax · Llama · LLaVA · Flamingo · ViT · LoRA/PEFT research
 
-*Build a frontier-grade language + vision model from scratch. Understand every line. Fine-tune it efficiently.*
+*Build a frontier-grade language + vision model from scratch. Understand every line. Fine-tune it efficiently. Load adapters, generate with them, merge them, and export plain checkpoints.*
 
 ---
 
 ### 🆓 This Course Is Completely Free
 
-Other LLM courses charge **$50–$500+** for content like this. APEX-1 is free and always will be — 33 lessons, 4 math references, 24 bug-fix engineering lessons, full annotated source code, CPU-friendly demos, vision architecture, LoRA/PEFT fine-tuning, and a growing test suite. No paywalls. No sign-ups. Just open source.
+Other LLM courses charge **$50–$500+** for content like this. APEX-1 is free and always will be — 34 lessons, 4 math references, 24 bug-fix engineering lessons, full annotated source code, CPU-friendly demos, vision architecture, LoRA/PEFT fine-tuning, adapter inference/merge workflows, and a growing test suite. No paywalls. No sign-ups. Just open source.
 
 If this helped you learn, please consider supporting so we can keep building free education:
 
@@ -44,15 +44,80 @@ APEX-1 is three things at once.
 
 **As a vision-language model preview**, APEX-1 accepts images through the existing `<|img|>` token. Images are encoded into visual tokens, projected into the APEX hidden space, and processed by the same decoder-only transformer context. This is the foundation for image captioning, visual question answering, screenshot understanding, chart understanding, and future multi-image reasoning.
 
-**As of v2.5.0, APEX-1 also includes LoRA/PEFT fine-tuning.** You can freeze the base model, inject low-rank trainable adapters into attention and feed-forward modules, train only a tiny number of parameters, save adapter-only checkpoints, and merge/unmerge adapters for deployment-style experiments.
+**As a PEFT learning project**, APEX-1 now supports the complete LoRA lifecycle:
+
+```txt
+train adapter -> save adapter -> load adapter -> generate -> merge -> unload -> export
+```
+
+As of **v2.5.0**, APEX-1 includes LoRA/PEFT fine-tuning. As of **v2.6.0**, it also includes adapter inference and merge/export workflows. You can freeze the base model, train only LoRA parameters, save adapter-only checkpoints, load adapters for generation, merge adapters into base weights, unload LoRA wrappers, and export plain APEX checkpoints for deployment-style experiments.
 
 > **If you have ever wanted to understand what is really inside a modern LLM — not just the theory but the actual code — this is for you.**
 
 ---
 
+## 🚀 What Is New in v2.6.0?
+
+APEX-1 v2.6.0 adds **LoRA adapter inference and merge/export workflows**.
+
+This release completes the full PEFT lifecycle:
+
+```txt
+train adapter -> save adapter -> load adapter -> generate -> merge -> export
+```
+
+| Feature | Status |
+|---|---|
+| Generate with saved LoRA adapter | ✅ Complete |
+| Safe base-checkpoint-first load order | ✅ Complete |
+| Runtime merge before generation | ✅ Complete |
+| Merge LoRA into base weights | ✅ Complete |
+| Unload LoRA wrappers after merge | ✅ Complete |
+| Save plain merged APEX checkpoint | ✅ Complete |
+| New helper module: `apex/model/lora_inference.py` | ✅ Complete |
+| New CLI: `scripts/generate_with_lora.py` | ✅ Complete |
+| New CLI: `scripts/merge_lora.py` | ✅ Complete |
+| New demo: `examples/lora_generation_demo.py` | ✅ Complete |
+| New tests: `tests/test_lora_inference.py` | ✅ Complete |
+| New guide: `docs/34-lora-inference-and-merge.md` | ✅ Complete |
+
+### Why v2.6.0 Matters
+
+v2.5.0 proved that APEX-1 can train LoRA adapters. v2.6.0 proves those adapters are useful after training.
+
+You can now generate with a saved adapter:
+
+```bash
+python scripts/generate_with_lora.py \
+  --config configs/apex1_tiny_lora.yaml \
+  --adapter outputs/lora-test/adapter_final.pt \
+  --prompt "Explain Rust ownership simply" \
+  --max-tokens 64
+```
+
+You can merge an adapter into a plain checkpoint:
+
+```bash
+python scripts/merge_lora.py \
+  --config configs/apex1_tiny_lora.yaml \
+  --adapter outputs/lora-test/adapter_final.pt \
+  --output outputs/merged-apex-lora.pt
+```
+
+Then use the merged checkpoint with normal generation:
+
+```bash
+python scripts/generate.py \
+  --config configs/apex1_tiny.yaml \
+  --checkpoint outputs/merged-apex-lora.pt \
+  --prompt "Hello"
+```
+
+---
+
 ## 🚀 What Is New in v2.5.0?
 
-APEX-1 v2.5.0 adds **LoRA + PEFT fine-tuning from scratch**.
+APEX-1 v2.5.0 added **LoRA + PEFT fine-tuning from scratch**.
 
 This release teaches how modern models are adapted without retraining every parameter.
 
@@ -110,6 +175,8 @@ APEX-1 includes an educational PEFT implementation built directly in PyTorch.
 | Unmerge LoRA from base weights | ✅ Complete |
 | CLI for SFT fine-tuning | ✅ Complete |
 | CPU smoke demo | ✅ Complete |
+| Generate with saved adapter | ✅ Complete |
+| Merge and unload adapters into plain checkpoint | ✅ Complete |
 | Real high-quality fine-tuning | Requires trained base checkpoint + dataset |
 
 Default LoRA target modules include:
@@ -153,14 +220,14 @@ This means the vision pipeline is architecturally complete and fully testable on
 |---|---|
 | **CS / Engineering students** | A hands-on project that covers what university ML courses often skip |
 | **Self-taught developers** | A structured path from "what is a token" to "how does PEFT fine-tuning work" |
-| **ML practitioners** | Deep dives into MLA, MoE, speculative decoding, LoRA, and modern alignment techniques |
+| **ML practitioners** | Deep dives into MLA, MoE, speculative decoding, LoRA, adapter merge/export, and modern alignment techniques |
 | **Researchers** | A reproducible educational reference architecture synthesizing modern LLM/VLM components |
-| **YouTube / content learners** | 33 documentation files, each structured like a complete lesson |
+| **YouTube / content learners** | 34 documentation files, each structured like a complete lesson |
 | **Open-source builders** | A codebase designed for reading, modifying, testing, and teaching |
 
 ---
 
-## 📚 The Curriculum — 33 Lessons
+## 📚 The Curriculum — 34 Lessons
 
 Every lesson follows the same five-step format:
 
@@ -249,6 +316,7 @@ Every lesson follows the same five-step format:
 | Lesson | Topic | Key Concepts |
 |---|---|---|
 | [33](docs/33-lora-peft-finetuning.md) | LoRA & PEFT Fine-Tuning | Low-rank adapters, frozen base model, adapter checkpoints, merge/unmerge |
+| [34](docs/34-lora-inference-and-merge.md) | LoRA Inference & Merge | Load adapters for generation, merge into base weights, unload wrappers, export plain checkpoints |
 
 ---
 
@@ -335,6 +403,7 @@ APEX-1 picks strong ideas from modern LLM and VLM systems and turns them into a 
 | Perceiver resampler | Flamingo-style compression | Fixed visual token budget |
 | LoRA adapters | LoRA / PEFT research | Efficient task adaptation without full fine-tuning |
 | Adapter checkpoints | PEFT workflow | Save small trainable deltas instead of full model copies |
+| Adapter merge/export | Deployment-style PEFT workflow | Convert adapter form into plain model checkpoints |
 
 ```txt
 Text tokens [batch, seq_len]
@@ -426,6 +495,8 @@ For multimodal lessons, start with **APEX-1-Tiny-Vision** (`configs/apex1_tiny_v
 
 For PEFT lessons, start with **APEX-1-Tiny-LoRA** (`configs/apex1_tiny_lora.yaml`).
 
+For LoRA inference/merge lessons, use **APEX-1-Tiny-LoRA-Inference** (`configs/apex1_tiny_lora_inference.yaml`) or the normal LoRA config.
+
 ---
 
 ## 🚀 Quick Start
@@ -458,8 +529,12 @@ python examples/vision_forward_demo.py
 # Try LoRA / PEFT fine-tuning smoke demo
 python examples/lora_finetune_demo.py
 
+# Try LoRA adapter generation smoke demo
+python examples/lora_generation_demo.py
+
 # Run LoRA tests
 pytest tests/test_lora_peft.py -v
+pytest tests/test_lora_inference.py -v
 
 # Run vision tests
 pytest tests/test_vision.py -v
@@ -478,15 +553,22 @@ Hidden states: (1, 10, 64)
 KV cache layers: 6
 ```
 
-Expected LoRA demo output:
+Expected LoRA fine-tune demo output:
 
 ```txt
-Base parameters: ...
-Trainable parameters: ...
-Trainable %: ...
-Loss before step: ...
-Loss after step: ...
+LoRA modules inserted: ...
+Trainable params: ...
+Trainable percent: ...
 Saved adapter: ...
+```
+
+Expected LoRA generation demo output:
+
+```txt
+Generated with adapter:
+...
+Merged checkpoint saved:
+...
 ```
 
 ---
@@ -505,6 +587,8 @@ This helps learners answer practical model-engineering questions:
 - Are generated texts repetitive?
 - Did the vision forward pass insert the expected number of visual tokens?
 - How many parameters are trainable after LoRA injection?
+- Does a saved LoRA adapter load and generate correctly?
+- Does a merged LoRA checkpoint match adapter-form inference?
 
 Commands:
 
@@ -644,6 +728,76 @@ unmerge_lora_weights(model)
 
 ---
 
+## 🔁 LoRA Inference & Merge — v2.6.0
+
+### 1. Generate with a saved adapter
+
+```bash
+python scripts/generate_with_lora.py \
+  --config configs/apex1_tiny_lora.yaml \
+  --adapter outputs/lora-test/adapter_final.pt \
+  --prompt "Explain Rust ownership simply" \
+  --max-tokens 64
+```
+
+Optional base checkpoint:
+
+```bash
+python scripts/generate_with_lora.py \
+  --config configs/apex1_tiny_lora.yaml \
+  --checkpoint checkpoints/base_model.pt \
+  --adapter outputs/lora-test/adapter_final.pt \
+  --tokenizer tokenizer.json \
+  --prompt "Write a short Python function" \
+  --max-tokens 128
+```
+
+### 2. Generate with runtime-merged adapter
+
+```bash
+python scripts/generate_with_lora.py \
+  --config configs/apex1_tiny_lora.yaml \
+  --adapter outputs/lora-test/adapter_final.pt \
+  --merge \
+  --prompt "Explain Rust ownership simply"
+```
+
+### 3. Merge adapter into a plain checkpoint
+
+```bash
+python scripts/merge_lora.py \
+  --config configs/apex1_tiny_lora.yaml \
+  --adapter outputs/lora-test/adapter_final.pt \
+  --output outputs/merged-apex-lora.pt
+```
+
+Optional base checkpoint:
+
+```bash
+python scripts/merge_lora.py \
+  --config configs/apex1_tiny_lora.yaml \
+  --checkpoint checkpoints/base_model.pt \
+  --adapter outputs/lora-test/adapter_final.pt \
+  --output outputs/merged-apex-lora.pt
+```
+
+### 4. Use merged checkpoint with normal generation
+
+```bash
+python scripts/generate.py \
+  --config configs/apex1_tiny.yaml \
+  --checkpoint outputs/merged-apex-lora.pt \
+  --prompt "Hello"
+```
+
+### 5. Run v2.6.0 tests
+
+```bash
+pytest tests/test_lora_inference.py -v
+```
+
+---
+
 ## 📁 Project Structure
 
 ```txt
@@ -670,6 +824,7 @@ APEX-1/
 │   │   ├── multi_token_head.py   # Speculative prediction heads
 │   │   ├── block.py              # One complete transformer block
 │   │   ├── lora.py               # LoRA layers, injection, save/load, merge/unmerge
+│   │   ├── lora_inference.py     # Load adapters, merge, unload, export plain checkpoints
 │   │   ├── apex_model.py         # Complete text-only APEX-1 model + PEFT support
 │   │   └── apex_vision_model.py  # Multimodal APEX-1 model: text + image tokens
 │   │
@@ -702,12 +857,13 @@ APEX-1/
 │   └── utils/                    # Shape checker, FLOPs, param counter, architecture maps
 │
 ├── configs/
-│   ├── apex1_tiny.yaml           # Tiny text-only config
-│   ├── apex1_small.yaml          # Small text-only config
-│   ├── apex1_medium.yaml         # Medium text-only config
-│   ├── apex1_large.yaml          # Large text-only config
-│   ├── apex1_tiny_vision.yaml    # Tiny multimodal config
-│   └── apex1_tiny_lora.yaml      # Tiny LoRA / PEFT config
+│   ├── apex1_tiny.yaml                 # Tiny text-only config
+│   ├── apex1_small.yaml                # Small text-only config
+│   ├── apex1_medium.yaml               # Medium text-only config
+│   ├── apex1_large.yaml                # Large text-only config
+│   ├── apex1_tiny_vision.yaml          # Tiny multimodal config
+│   ├── apex1_tiny_lora.yaml            # Tiny LoRA / PEFT config
+│   └── apex1_tiny_lora_inference.yaml  # Tiny LoRA inference/merge config
 │
 ├── docs/
 │   ├── 00-introduction.md
@@ -715,6 +871,7 @@ APEX-1/
 │   ├── 31-end-to-end-walkthrough.md
 │   ├── 32-vision-capabilities.md
 │   ├── 33-lora-peft-finetuning.md
+│   ├── 34-lora-inference-and-merge.md
 │   └── APEX-1-Mathematical-Reference-Part*.md
 │
 ├── tests/
@@ -722,7 +879,8 @@ APEX-1/
 │   ├── test_bugfixes.py          # Regression tests for documented bugs
 │   ├── test_vision.py            # Vision config, encoder, projector, model, loss tests
 │   ├── test_eval_and_inspector.py# Evaluation, benchmark, inspector tests
-│   └── test_lora_peft.py         # LoRA / PEFT tests
+│   ├── test_lora_peft.py         # LoRA / PEFT training tests
+│   └── test_lora_inference.py    # LoRA adapter inference + merge/export tests
 │
 ├── examples/
 │   ├── forward_pass_demo.py      # Text forward-pass demo
@@ -736,7 +894,8 @@ APEX-1/
 │   ├── inspect_model_demo.py     # Model inspector demo
 │   ├── architecture_diagram_demo.py
 │   ├── tiny_dataset_demo.py
-│   └── lora_finetune_demo.py     # LoRA / PEFT CPU smoke demo
+│   ├── lora_finetune_demo.py     # LoRA / PEFT CPU smoke demo
+│   └── lora_generation_demo.py   # LoRA adapter generation + merge demo
 │
 ├── scripts/
 │   ├── train.py                  # Text training CLI
@@ -744,7 +903,9 @@ APEX-1/
 │   ├── benchmark.py              # CLI benchmark
 │   ├── inspect_model.py          # CLI model inspector
 │   ├── print_architecture.py     # CLI architecture diagram
-│   └── finetune_lora.py          # LoRA / PEFT fine-tuning CLI
+│   ├── finetune_lora.py          # LoRA / PEFT fine-tuning CLI
+│   ├── generate_with_lora.py     # Generate with saved LoRA adapter
+│   └── merge_lora.py             # Merge adapter and export plain checkpoint
 │
 ├── data/samples/
 │   ├── tiny_text.jsonl           # Text pretraining format example
@@ -761,6 +922,19 @@ APEX-1/
 ---
 
 ## 🧪 What's New by Version
+
+### v2.6.0 — LoRA Adapter Inference & Merge
+
+- **Adapter generation CLI** — `scripts/generate_with_lora.py` loads saved adapters and runs generation.
+- **Safe load order** — base checkpoint loads first, then LoRA is injected, then adapter weights load.
+- **Runtime merge option** — generate with adapter-form weights or merge before generation.
+- **Plain checkpoint export** — `scripts/merge_lora.py` merges LoRA deltas and saves a normal APEX checkpoint.
+- **Unload LoRA wrappers** — merged models can be converted back to standard `nn.Linear` modules.
+- **Inference helper module** — `apex/model/lora_inference.py` centralizes adapter loading, merging, unloading, and export utilities.
+- **New CPU demo** — `examples/lora_generation_demo.py`.
+- **New tests** — `tests/test_lora_inference.py`.
+- **New config** — `configs/apex1_tiny_lora_inference.yaml`.
+- **New guide** — `docs/34-lora-inference-and-merge.md`.
 
 ### v2.5.0 — LoRA / PEFT Fine-Tuning
 
@@ -794,25 +968,28 @@ Full history in [CHANGELOG.md](CHANGELOG.md).
 
 ## 🗺️ Learning Path
 
-**If you are completely new to AI:**
+**If you are completely new to AI:**  
 Start at [docs/00-introduction.md](docs/00-introduction.md) and read in order. Each lesson builds on the previous one. By lesson 15 you will understand the complete forward pass of a modern LLM.
 
-**If you know PyTorch but not transformers:**
+**If you know PyTorch but not transformers:**  
 Start at [docs/04-embeddings-and-rmsnorm.md](docs/04-embeddings-and-rmsnorm.md). Skip lessons 00–03 or skim them.
 
-**If you understand transformers but not modern LLMs:**
+**If you understand transformers but not modern LLMs:**  
 Start at [docs/07-attention-mla.md](docs/07-attention-mla.md) — this is where APEX-1 diverges from standard transformer tutorials.
 
-**If you want to understand alignment:**
+**If you want to understand alignment:**  
 Jump directly to Part 8 (docs 24–29). The GRPO lesson (doc 26) is particularly relevant to current reasoning-model research.
 
-**If you want to understand multimodal models:**
+**If you want to understand multimodal models:**  
 Read [docs/32-vision-capabilities.md](docs/32-vision-capabilities.md). It explains image preprocessing, patch encoding, visual tokens, projector design, and multimodal SFT loss.
 
-**If you want to understand efficient fine-tuning:**
+**If you want to understand efficient fine-tuning:**  
 Read [docs/33-lora-peft-finetuning.md](docs/33-lora-peft-finetuning.md). It explains LoRA math, adapter injection, frozen-base training, adapter checkpoints, and merge/unmerge.
 
-**If you want the math:**
+**If you want to understand adapter inference and export:**  
+Read [docs/34-lora-inference-and-merge.md](docs/34-lora-inference-and-merge.md). It explains how to load saved adapters, generate with them, merge them into base weights, unload wrappers, and save plain checkpoints.
+
+**If you want the math:**  
 The [Mathematical Reference](docs/APEX-1-Mathematical-Reference-Part1.md) covers all 34 formulas with full derivations and numerical examples.
 
 ---
@@ -833,6 +1010,9 @@ pytest tests/test_eval_and_inspector.py -v
 # LoRA / PEFT tests
 pytest tests/test_lora_peft.py -v
 
+# LoRA inference / merge tests
+pytest tests/test_lora_inference.py -v
+
 # Everything
 pytest tests/ -v
 ```
@@ -849,6 +1029,7 @@ Key areas where contributions help:
 - Small pretrained educational checkpoints
 - Additional test coverage for alignment modules
 - Additional LoRA/PEFT examples
+- Adapter inference, merge, and deployment examples
 - CPU-friendly vision examples, datasets, and training notebooks
 - Translations of documentation to other languages
 - Bug reports and fixes
@@ -874,16 +1055,16 @@ Key areas where contributions help:
 APEX-1 stands on the shoulders of giants. Architectural and educational inspiration includes:
 
 - **Anthropic / Claude** — Constitutional AI and reasoning-style safety workflows
-- **OpenAI / GPT-style systems** — Process reward modeling and large-scale language modeling ideas
+- **OpenAI / GPT-style systems** — process reward modeling and large-scale language modeling ideas
 - **DeepSeek-V3/R1** — MLA, GRPO, auxiliary-loss-free load balancing, reasoning-model ideas
-- **Alibaba / Qwen** — Large vocabulary and multilingual/code-tokenizer inspiration
+- **Alibaba / Qwen** — large vocabulary and multilingual/code-tokenizer inspiration
 - **Google / Gemma and ViT** — efficient attention patterns and vision transformer foundations
 - **Zhipu AI / GLM** — prefix bidirectional attention inspiration
 - **Moonshot AI / KIMI** — YaRN-style long-context extension inspiration
 - **MiniMax** — efficient MoE design inspiration
 - **Meta / Llama** — GQA, SwiGLU, and practical transformer engineering inspiration
 - **LLaVA / Flamingo / Qwen-VL research** — visual-token bridge and multimodal instruction-tuning pattern
-- **LoRA / PEFT research community** — efficient low-rank adaptation and adapter fine-tuning workflows
+- **LoRA / PEFT research community** — efficient low-rank adaptation, adapter fine-tuning, and adapter merge/export workflows
 
 ---
 
@@ -919,6 +1100,6 @@ Free to use, modify, and distribute with attribution.
 
 *Built with ❤️ by Aarambh Dev Hub — Teaching AI from the ground up.*
 
-**[Start Learning →](docs/00-introduction.md)** · **[Learn Vision →](docs/32-vision-capabilities.md)** · **[Learn LoRA/PEFT →](docs/33-lora-peft-finetuning.md)**
+**[Start Learning →](docs/00-introduction.md)** · **[Learn Vision →](docs/32-vision-capabilities.md)** · **[Learn LoRA/PEFT →](docs/33-lora-peft-finetuning.md)** · **[Learn LoRA Inference →](docs/34-lora-inference-and-merge.md)**
 
 </div>

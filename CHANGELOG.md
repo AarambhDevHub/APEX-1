@@ -5,9 +5,111 @@ All notable changes to APEX-1 will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-# Changelog — v2.5.0
+## v2.6.0 — LoRA Adapter Inference & Merge
 
-## Added
+APEX-1 v2.6.0 completes the LoRA/PEFT workflow started in v2.5.0.
+
+v2.5.0 proved that APEX-1 can train and save adapter-only checkpoints.
+v2.6.0 adds the missing production-style path:
+
+```txt
+train adapter -> save adapter -> load adapter -> generate -> merge -> export
+```
+
+### Added
+
+- `apex/model/lora_inference.py`
+  - safe base-checkpoint-first loading
+  - automatic LoRA adapter injection
+  - adapter checkpoint loading for inference
+  - merge-and-unload helper
+  - merged checkpoint export helper
+
+- `scripts/generate_with_lora.py`
+  - generate text with a saved LoRA adapter
+  - optional base checkpoint support
+  - optional runtime merge before generation
+
+- `scripts/merge_lora.py`
+  - merge LoRA adapter weights into base model weights
+  - unload LoRA wrappers by default
+  - export plain APEX checkpoint compatible with normal generation
+
+- `examples/lora_generation_demo.py`
+  - CPU-friendly adapter lifecycle demo
+
+- `tests/test_lora_inference.py`
+  - adapter inference load test
+  - runtime merge test
+  - merge-and-unload test
+  - plain checkpoint compatibility test
+  - helper workflow test
+
+- `docs/34-lora-inference-and-merge.md`
+  - full lesson explaining adapter inference and merge
+
+- `configs/apex1_tiny_lora_inference.yaml`
+  - CPU-friendly config for adapter inference demos
+
+### Updated
+
+- `apex/model/lora.py`
+  - `count_lora_modules`
+  - `has_lora_adapters`
+  - `require_lora_adapters`
+  - `peft_config_to_dict`
+  - safer `torch.load` compatibility helper
+  - `merge_and_unload_lora_weights`
+  - `save_merged_lora_checkpoint`
+  - adapter metadata now includes version and module count
+
+- `apex/__init__.py`
+  - version bumped to `2.6.0`
+
+- `pyproject.toml`
+  - version bumped to `2.6.0`
+  - metadata updated for adapter inference and merge
+
+### Commands
+
+Generate with adapter:
+
+```bash
+python scripts/generate_with_lora.py \
+  --config configs/apex1_tiny_lora.yaml \
+  --adapter outputs/lora-test/adapter_final.pt \
+  --prompt "Explain Rust ownership simply" \
+  --max-tokens 64
+```
+
+Merge adapter:
+
+```bash
+python scripts/merge_lora.py \
+  --config configs/apex1_tiny_lora.yaml \
+  --adapter outputs/lora-test/adapter_final.pt \
+  --output outputs/merged-apex-lora.pt
+```
+
+Use merged checkpoint:
+
+```bash
+python scripts/generate.py \
+  --config configs/apex1_tiny.yaml \
+  --checkpoint outputs/merged-apex-lora.pt \
+  --prompt "Hello"
+```
+
+Run tests:
+
+```bash
+pytest tests/test_lora_peft.py tests/test_lora_inference.py -v
+```
+
+
+## v2.5.0
+
+### Added
 
 - Native LoRA implementation in `apex/model/lora.py`
 - `PEFTConfig` in `apex/config.py`
@@ -21,13 +123,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Tests: `tests/test_lora_peft.py`
 - New guide: `docs/33-lora-peft-finetuning.md`
 
-## Changed
+### Changed
 
 - Version bumped to `2.5.0`
 - `APEX1Model` now supports optional PEFT adapter injection
 - README can now document LoRA fine-tuning commands and workflow
 
-## Why
+### Why
 
 APEX-1 already had pretraining, SFT, alignment, vision, and evaluation. LoRA/PEFT makes it practical to fine-tune APEX-1 on small custom datasets without training the full model.
 

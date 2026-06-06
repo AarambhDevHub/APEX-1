@@ -342,7 +342,7 @@ class APEXConfig:
 
         if p.enabled:
             if p.method != "lora":
-                raise ValueError("Only peft.method='lora' is implemented in v2.5.0")
+                raise ValueError("Only peft.method='lora' is implemented in v2.6.0")
             if p.r <= 0:
                 raise ValueError("peft.r must be positive")
             if p.alpha <= 0:
