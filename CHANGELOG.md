@@ -5,6 +5,61 @@ All notable changes to APEX-1 will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## v3.0.0 — Course-Ready Stable Release
+
+APEX-1 v3.0.0 is the stable course-ready release for the full "Build Your Own AI Model From Scratch" learning path.
+
+This release does not add another large model feature. Instead, it makes the repository easier to teach, verify, test, and maintain.
+
+### Added
+
+- Added `MODEL_CARD.md`.
+- Added `COURSE_READY_CHECKLIST.md`.
+- Added `docs/38-course-ready-release.md`.
+- Added `scripts/course_ready_check.py`.
+- Added GitHub Actions CI workflow at `.github/workflows/ci.yml`.
+- Added pull request template at `.github/pull_request_template.md`.
+- Added `V3_0_0_GITHUB_RELEASE_NOTES.md`.
+
+### Changed
+
+- Updated project version from `2.9.0` to `3.0.0`.
+- Updated README title/version to `v3.0.0`.
+- Updated README curriculum references from 35 lessons to 37 lessons.
+- Fixed release history:
+  - `v2.5.0` = LoRA / PEFT fine-tuning
+  - `v2.6.0` = LoRA inference + merge/export
+  - `v2.7.0` = QLoRA 4-bit fine-tuning
+  - `v2.8.0` = DoRA / QDoRA
+  - `v2.9.0` = Adapter-DPO alignment
+  - `v3.0.0` = Course-ready stable release
+- Updated Makefile with course-ready commands:
+  - `make course-check`
+  - `make course-check-examples`
+  - `make course-check-tests`
+  - `make course-check-full`
+  - `make demo-all`
+- Updated Dockerfile to remove the missing `requirements.txt` copy and use a CPU-friendly course setup.
+
+### Fixed
+
+- Fixed README version confusion where DoRA was described as v2.9.0 instead of v2.8.0.
+- Fixed Docker build setup that referenced a missing `requirements.txt`.
+
+### Verification
+
+Recommended local verification:
+
+```bash
+python scripts/course_ready_check.py --mode quick
+python scripts/course_ready_check.py --mode examples
+pytest tests/ -v
+```
+
+### Important Note
+
+APEX-1 remains an educational architecture. It does not ship with a large pretrained checkpoint. Tiny CPU demos verify mechanics and architecture, while real high-quality generation requires real training data, compute, trained checkpoints, evaluation, and safety testing.
+
 ## v2.9.0 — Adapter-DPO Alignment
 
 v2.9.0 adds Direct Preference Optimization for PEFT adapters.
