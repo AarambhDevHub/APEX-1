@@ -4,8 +4,8 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "apex-1"
-version = "2.9.0"
-description = "APEX-1: A Best-of-All-Worlds Large Language + Vision Model with LoRA, QLoRA, DoRA, and adapter-based DPO alignment"
+version = "3.0.0"
+description = "APEX-1: Course-ready educational Large Language + Vision Model with LoRA, QLoRA, DoRA, and adapter-DPO"
 readme = "README.md"
 license = {text = "Apache-2.0"}
 requires-python = ">=3.10"

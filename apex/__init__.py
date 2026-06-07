@@ -12,5 +12,5 @@ and adapter-based DPO preference alignment.
 Copyright 2024-2026 Aarambh Dev Hub. Licensed under Apache 2.0.
 """
 
-__version__ = "2.9.0"
+__version__ = "3.0.0"
 __author__ = "Aarambh Dev Hub"
